@@ -263,7 +263,6 @@ class Drivetrain : NextFTCOpMode() {
                 Spindexer.autoIndex(2)()
             }
 
-
         button {gamepad2.left_stick_button}
             .whenBecomesTrue {
                 if(NewTurret.goalTrackingActive)
