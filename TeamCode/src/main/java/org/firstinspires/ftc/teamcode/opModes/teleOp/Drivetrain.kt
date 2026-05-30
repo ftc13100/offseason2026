@@ -119,7 +119,6 @@ class Drivetrain : NextFTCOpMode() {
             .whenTrue { driverControlled.scalar = 0.5 }
             .whenFalse { driverControlled.scalar = 1.0 }
 
-
         button { gamepad1.dpad_up }
             .whenBecomesTrue {
                 if (NewTurret.goalTrackingActive)
