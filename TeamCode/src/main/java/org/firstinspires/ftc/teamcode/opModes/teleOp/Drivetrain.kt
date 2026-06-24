@@ -18,6 +18,7 @@ import dev.nextftc.hardware.driving.FieldCentric
 import dev.nextftc.hardware.driving.MecanumDriverControlled
 import dev.nextftc.hardware.impl.MotorEx
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
+import org.firstinspires.ftc.teamcode.opModes.subsystems.IndicatorLED
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
@@ -36,7 +37,7 @@ class Drivetrain : NextFTCOpMode() {
     init {
         addComponents(
             SubsystemComponent(
-                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage
+                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, IndicatorLED
             ),
             BindingsComponent,
             BulkReadComponent,
