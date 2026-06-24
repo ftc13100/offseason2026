@@ -1,62 +1,84 @@
 package org.firstinspires.ftc.teamcode.opModes.subsystems
-
 import dev.nextftc.core.subsystems.Subsystem
-import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap
+import dev.nextftc.ftc.ActiveOpMode.hardwareMap
+import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.Color
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.GoBildaPrismDriver
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.PrismAnimations
 
-class IndicatorLED : Subsystem {
+object IndicatorLED : Subsystem {
     private lateinit var prism : GoBildaPrismDriver
-
-    private var numArtifacts = 0
+    private var colorIndex = 0 // Equivalent to number of artifacts
     private var flashing = false
+    private var previousPixelCount = 0;
 
     override fun initialize() {
         prism = hardwareMap.get(GoBildaPrismDriver::class.java, "prism")
+        createArtboards() // Temporary, will move to a better place
+    }
+
+    override fun periodic() {
+        val pixelCount = Spindexer.pixelCount()
+
+        if (pixelCount != previousPixelCount) colorIndex = pixelCount
+        flashing = Intake.intakeRunning
+
+        previousPixelCount = pixelCount
     }
 
     fun createArtboards() {
         val layers = arrayOf(
-            PrismAnimations.Solid()
-            // All possible layers (flashing/sold for all three colors)
+            // Solid colors -> layers[colorIndex]
+            PrismAnimations.Solid(Color.RED),
+            PrismAnimations.Solid(Color.YELLOW),
+            PrismAnimations.Solid(Color.BLUE),
+            PrismAnimations.Solid(Color.GREEN),
+            // Pulsing colors -> layers[4 + colorIndex]
+            PrismAnimations.Pulse(Color.RED, Color.TRANSPARENT),
+            PrismAnimations.Pulse(Color.YELLOW, Color.TRANSPARENT),
+            PrismAnimations.Pulse(Color.BLUE, Color.TRANSPARENT),
+            PrismAnimations.Pulse(Color.GREEN, Color.TRANSPARENT)
         )
 
-        // Initialize parameters for every animation by looping through 'layers' and create artboards for each one to use in instant commands
-        // During robot initialization, it is legal to flicker our lights, and we can add each one to an artboard in memory before shutting them all off
-        // This only needs to be done once, and will save to the device to later recall from
+        for (lIndex in layers.indices) {
+            prism.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, layers[lIndex])
+            prism.saveCurrentAnimationsToArtboard(GoBildaPrismDriver.Artboard.entries[lIndex])
+        }
+
+        prism.clearAllAnimations()
     }
 
     fun updateLED() {
-        // Load an artboard based on numArtifacts + flashing
+        if (flashing) prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex + 4])
+        else prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex])
     }
 
-    val startFlash = instant {
-        flashing = true
-        updateLED()
-    }
-
-    val stopFlash = instant {
-        flashing = false
-        updateLED()
-    }
-
-    val setColorRed = instant {
-        numArtifacts = 0
-        updateLED()
-    }
-
-    val setColorYellow = instant {
-        numArtifacts = 1
-        updateLED()
-    }
-
-    val setColorBlue = instant {
-        numArtifacts = 2
-        updateLED()
-    }
-
-    val setColorGreen = instant {
-        numArtifacts = 3
-        updateLED()
-    }
+//    val startFlash = instant {
+//        flashing = true
+//        updateLED()
+//    }
+//
+//    val stopFlash = instant {
+//        flashing = false
+//        updateLED()
+//    }
+//
+//    val setColorRed = instant {
+//        colorIndex = 0
+//        updateLED()
+//    }
+//
+//    val setColorYellow = instant {
+//        colorIndex = 1
+//        updateLED()
+//    }
+//
+//    val setColorBlue = instant {
+//        colorIndex = 2
+//        updateLED()
+//    }
+//
+//    val setColorGreen = instant {
+//        colorIndex = 3
+//        updateLED()
+//    }
 }
