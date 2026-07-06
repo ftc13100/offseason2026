@@ -86,11 +86,11 @@ class Drivetrain : NextFTCOpMode() {
             it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
         }
         follower.update()
-//        NewTurret.trackTarget()
+        // NewTurret.trackTarget()
     }
 
     override fun onStartButtonPressed() {
-//        NewTurret.backRightMotor.atPosition(6000.0)
+        // NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
 
         driverControlled = MecanumDriverControlled(
@@ -101,7 +101,7 @@ class Drivetrain : NextFTCOpMode() {
             -Gamepads.gamepad1.leftStickY,
             Gamepads.gamepad1.leftStickX,
             Gamepads.gamepad1.rightStickX,
-            mode = FieldCentric { follower.pose.heading.rad }
+            // mode = FieldCentric { follower.pose.heading.rad }
         )
         driverControlled.scalar = 1.0
 
@@ -369,5 +369,6 @@ class Drivetrain : NextFTCOpMode() {
 
     override fun onStop() {
         BindingManager.reset()
+        IndicatorLED.stop()
     }
 }

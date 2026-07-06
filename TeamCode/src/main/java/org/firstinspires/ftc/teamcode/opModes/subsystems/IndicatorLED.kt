@@ -4,16 +4,16 @@ import dev.nextftc.ftc.ActiveOpMode.hardwareMap
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.Color
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.GoBildaPrismDriver
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.PrismAnimations
+import java.lang.Thread.sleep
 
 object IndicatorLED : Subsystem {
-    private lateinit var prism : GoBildaPrismDriver
+    private lateinit var prism: GoBildaPrismDriver
     private var colorIndex = 0 // Equivalent to number of artifacts
     private var flashing = false
-    private var previousPixelCount = 0;
+    private var previousPixelCount = 0
 
     override fun initialize() {
-        prism = hardwareMap.get(GoBildaPrismDriver::class.java, "prism")
-        createArtboards() // Temporary, will move to a better place
+        prism = hardwareMap.get(GoBildaPrismDriver::class.java, "led")
     }
 
     override fun periodic() {
@@ -23,6 +23,8 @@ object IndicatorLED : Subsystem {
         flashing = Intake.intakeRunning
 
         previousPixelCount = pixelCount
+
+        updateLED()
     }
 
     fun createArtboards() {
@@ -33,7 +35,7 @@ object IndicatorLED : Subsystem {
             PrismAnimations.Solid(Color.BLUE),
             PrismAnimations.Solid(Color.GREEN),
             // Pulsing colors -> layers[4 + colorIndex]
-            PrismAnimations.Pulse(Color.RED, Color.TRANSPARENT),
+        PrismAnimations.Pulse(Color.RED, Color.TRANSPARENT, 500),
             PrismAnimations.Pulse(Color.YELLOW, Color.TRANSPARENT),
             PrismAnimations.Pulse(Color.BLUE, Color.TRANSPARENT),
             PrismAnimations.Pulse(Color.GREEN, Color.TRANSPARENT)
@@ -41,6 +43,7 @@ object IndicatorLED : Subsystem {
 
         for (lIndex in layers.indices) {
             prism.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, layers[lIndex])
+            sleep(500)
             prism.saveCurrentAnimationsToArtboard(GoBildaPrismDriver.Artboard.entries[lIndex])
         }
 
@@ -52,33 +55,5 @@ object IndicatorLED : Subsystem {
         else prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex])
     }
 
-//    val startFlash = instant {
-//        flashing = true
-//        updateLED()
-//    }
-//
-//    val stopFlash = instant {
-//        flashing = false
-//        updateLED()
-//    }
-//
-//    val setColorRed = instant {
-//        colorIndex = 0
-//        updateLED()
-//    }
-//
-//    val setColorYellow = instant {
-//        colorIndex = 1
-//        updateLED()
-//    }
-//
-//    val setColorBlue = instant {
-//        colorIndex = 2
-//        updateLED()
-//    }
-//
-//    val setColorGreen = instant {
-//        colorIndex = 3
-//        updateLED()
-//    }
+    val stop = instant { prism.clearAllAnimations() }
 }
