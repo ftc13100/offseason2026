@@ -35,10 +35,10 @@ object IndicatorLED : Subsystem {
             PrismAnimations.Solid(Color.BLUE),
             PrismAnimations.Solid(Color.GREEN),
             // Pulsing colors -> layers[4 + colorIndex]
-        PrismAnimations.Pulse(Color.RED, Color.TRANSPARENT, 500),
-            PrismAnimations.Pulse(Color.YELLOW, Color.TRANSPARENT),
-            PrismAnimations.Pulse(Color.BLUE, Color.TRANSPARENT),
-            PrismAnimations.Pulse(Color.GREEN, Color.TRANSPARENT)
+            PrismAnimations.Snakes(5, 0, 6, *arrayOf(Color.RED)),
+            PrismAnimations.Snakes(5, 0, 6, *arrayOf(Color.YELLOW)),
+            PrismAnimations.Snakes(5, 0, 6, *arrayOf(Color.BLUE)),
+            PrismAnimations.Snakes(5, 0, 6, *arrayOf(Color.GREEN))
         )
 
         for (lIndex in layers.indices) {

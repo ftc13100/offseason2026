@@ -101,7 +101,7 @@ class Drivetrain : NextFTCOpMode() {
             -Gamepads.gamepad1.leftStickY,
             Gamepads.gamepad1.leftStickX,
             Gamepads.gamepad1.rightStickX,
-            // mode = FieldCentric { follower.pose.heading.rad }
+            mode = FieldCentric { follower.pose.heading.rad }
         )
         driverControlled.scalar = 1.0
 
@@ -202,7 +202,7 @@ class Drivetrain : NextFTCOpMode() {
 
         //Intake artifact
         button { gamepad1.left_bumper }
-  //          .toggleOnBecomesTrue()
+            //          .toggleOnBecomesTrue()
             .whenBecomesTrue {
                 Spindexer.toIntakePos()
             }
@@ -213,7 +213,7 @@ class Drivetrain : NextFTCOpMode() {
                 Intake.spinStop()
             }
 
-                //Outtake artifact
+        //Outtake artifact
         button { gamepad1.right_bumper }
             .whenBecomesTrue {
                 Intake.spinReverse()
@@ -333,7 +333,7 @@ class Drivetrain : NextFTCOpMode() {
 
             telemetry.addData("Shooter", "V: %.0f, T: %.0f, Offset: %.0f",Shooter.shooter.velocity, Shooter.target, Shooter.manualOffset)
             telemetry.addData("Turret", "F: %.1f, R: %.1f, S: %.3f",NewTurret.targetAngleField, NewTurret.targetAngleRobotRef, NewTurret.targetServoPosition)
-        //    telemetry.addData("TurretEnc", "E: %.0f, A: %.1f, Err: %.1f",NewTurret.encoderDPosition(), NewTurret.encoderDAngle())
+            //    telemetry.addData("TurretEnc", "E: %.0f, A: %.1f, Err: %.1f",NewTurret.encoderDPosition(), NewTurret.encoderDAngle())
 //            telemetry.addData("TurretAng", "Static: %.1f, AngV: %.1f, Err: %.1f", NewTurret.targetAngleStatic, NewTurret.targetAngleAV, NewTurret.encoderDAngle() - NewTurret.targetAngleRobotRef)
             telemetry.addData("Hood", "Pos: %.2f, Offset: %.2f", ShooterAngle.servo.position, ShooterAngle.manualOffset)
 
