@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes.subsystems
+import dev.nextftc.core.commands.Command
 import dev.nextftc.core.subsystems.Subsystem
 import dev.nextftc.ftc.ActiveOpMode.hardwareMap
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.Color
@@ -8,25 +9,25 @@ import java.lang.Thread.sleep
 
 object IndicatorLED : Subsystem {
     private lateinit var prism: GoBildaPrismDriver
-    private var colorIndex = 0 // Equivalent to number of artifacts
-    private var flashing = false
-    private var previousPixelCount = 0
+    private var colorIndex = 0
+    private var previousColorIndex = 0
 
     override fun initialize() {
         prism = hardwareMap.get(GoBildaPrismDriver::class.java, "led")
-    }
-
-    override fun periodic() {
-        val pixelCount = Spindexer.pixelCount()
-
-        if (pixelCount != previousPixelCount) colorIndex = pixelCount
-        flashing = Intake.intakeRunning
-
-        previousPixelCount = pixelCount
-
         updateLED()
     }
 
+    override fun periodic() {
+        colorIndex = Spindexer.pixelCount()
+        if (Intake.intakeRunning) colorIndex += 4
+
+        if (colorIndex != previousColorIndex) updateLED()
+
+        previousColorIndex = colorIndex
+    }
+
+    // DO NOT RUN BLOCKING METHOD IN REGULAR OPMODE INITIALIZATION
+    // Creates permanent artboards for LEDs, only needs to be run once on new LEDs or when any animation changes are made.
     fun createArtboards() {
         val layers = arrayOf(
             // Solid colors -> layers[colorIndex]
@@ -51,9 +52,8 @@ object IndicatorLED : Subsystem {
     }
 
     fun updateLED() {
-        if (flashing) prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex + 4])
-        else prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex])
+        prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex])
     }
 
-    val stop = instant { prism.clearAllAnimations() }
+    val stop = run { prism.clearAllAnimations() }.setInterruptible(false) // Still can't run properly on program stop, runs anywhere else though
 }

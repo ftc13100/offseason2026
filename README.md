@@ -682,7 +682,7 @@ This is a bug fix only release to address the following four issues.
 
 ### Enhancements
 * Attempts to automatically fix the condition where a Control Hub's internal Expansion Hub is not
-  working by re-flashing its firmware
+  working by re-intakeRunning its firmware
 * Makes various improvements to the Wi-Fi Direct pairing screen, especially in landscape mode
 * Makes the Robot Controller service no longer be categorically restarted when the main activity is brought to foreground
     * (e.g. the service is no longer restarted simply by viewing the Self Inspect screen and pressing the back button)
