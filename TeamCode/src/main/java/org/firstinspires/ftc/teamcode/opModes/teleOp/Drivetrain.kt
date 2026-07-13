@@ -368,7 +368,8 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onStop() {
-        IndicatorLED.stop()
+        IndicatorLED.forceStop()
         BindingManager.reset()
+        sleep(100)
     }
 }

@@ -56,4 +56,6 @@ object IndicatorLED : Subsystem {
     }
 
     val stop = run { prism.clearAllAnimations() }.setInterruptible(false) // Still can't run properly on program stop, runs anywhere else though
+
+    fun forceStop() { prism.clearAllAnimations() }
 }
