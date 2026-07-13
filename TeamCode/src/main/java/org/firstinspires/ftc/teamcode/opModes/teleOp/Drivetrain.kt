@@ -67,6 +67,14 @@ class Drivetrain : NextFTCOpMode() {
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
 
+    private val scaledCloseShootingZone = Triangle(Point(-5.75, 149.75),
+                                                   Point(149.75, 149.75),
+                                                   Point(72.0, 66.25),) // Scaled +5.75in for robot
+
+    private val scaledFarShootingZone = Triangle(Point(54.25, -5.75),
+                                                   Point(72.0, 17.75),
+                                                   Point(89.75, -5.75)) // Scaled +5.75in for robot
+
     override fun onInit() {
 
         if (abs(startPose.x) < 0.1 && abs(startPose.y) < 0.1) {
@@ -224,7 +232,9 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad1.left_trigger > 0.4 }
             .whenTrue {
-                Spindexer.spinShot()
+                if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone) || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+                    Spindexer.spinShot()
+                }
             }
             .whenBecomesFalse {
                 Spindexer.stopShot()
@@ -359,6 +369,17 @@ class Drivetrain : NextFTCOpMode() {
 //            telemetry.addData("Alpha", "%.3f", Spindexer.color1.normalizedColors.alpha)
 //            telemetry.addData("S2 ", Spindexer.detectColorRGB(Spindexer.color2))
 //            telemetry.addData("Alpha", "%.3f", Spindexer.color2.normalizedColors.alpha)
+
+            telemetry.addData(
+                "In Zone", "%s",
+                if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)) {
+                    "Close"
+                } else if (ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+                    "Far"
+                } else {
+                    "None"
+                }
+            ) // Only updates when LT is held
 
             telemetry.update()
 
