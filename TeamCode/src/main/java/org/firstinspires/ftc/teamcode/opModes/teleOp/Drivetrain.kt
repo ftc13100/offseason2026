@@ -69,11 +69,11 @@ class Drivetrain : NextFTCOpMode() {
 
     private val scaledCloseShootingZone = Triangle(Point(-5.75, 149.75),
                                                    Point(149.75, 149.75),
-                                                   Point(72.0, 66.25),) // Scaled +5.75in for robot
+                                                   Point(72.0, 66.25)) // Scaled +5.75in for robot
 
-    private val scaledFarShootingZone = Triangle(Point(54.25, -5.75),
-                                                   Point(72.0, 17.75),
-                                                   Point(89.75, -5.75)) // Scaled +5.75in for robot
+    private val scaledFarShootingZone = Triangle(Point(44.5, -5.75),
+                                                   Point(72.0, 29.5),
+                                                   Point(101.75, -5.75)) // Scaled +5.75in for robot
 
     override fun onInit() {
 
@@ -232,7 +232,9 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad1.left_trigger > 0.4 }
             .whenTrue {
-                if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone) || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+                if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
+                    || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)
+                    || gamepad1.a) {
                     Spindexer.spinShot()
                 }
             }

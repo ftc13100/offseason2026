@@ -28,16 +28,16 @@ object BiLinearShooter {
         DataPoint(72.0, 117.97, 1560.0, 0.600),
         DataPoint(72.0, 93.97, 1600.0, 0.550),
         DataPoint(24.0, 93.97, 1980.0, 0.750),
-        DataPoint(96.0, 93.97, 1400.0, 0.350),
-        DataPoint(48.0, 93.97, 1840.0, 0.750),
-        DataPoint(120.0, 93.97, 1600.0, 0.700),
-        DataPoint(72.0, 69.97, 1720.0, 0.700),
-        DataPoint(96.0, 69.97, 1780.0, 0.700),
-        DataPoint(48.0, 69.97, 1820.0, 0.650),
-        DataPoint(72.0, 45.97, 1860.0, 0.700),
-        DataPoint(98.03, 24.00, 1880.0, 0.650),
-        DataPoint(72.0, 21.97, 2100.0, 0.800),
-        DataPoint(50.03, 21.97, 2060.0, 0.550)
+        DataPoint(96.0, 93.97, 1360.0, 0.390),
+        DataPoint(48.0, 93.97, 1820.0, 0.760),
+        DataPoint(120.0, 93.97, 1360.0, 0.250),
+        DataPoint(72.0, 69.97, 1660.0, 0.695),
+        DataPoint(96.0, 69.97, 1620.0, 0.700),
+        DataPoint(48.0, 69.97, 1780.0, 0.650),
+        DataPoint(72.0, 45.97, 1820.0, 0.750),
+        DataPoint(98.03, 24.00, 1840.0, 0.750),
+        DataPoint(72.0, 21.97, 2020.0, 0.850),
+        DataPoint(50.03, 21.97, 2060.0, 0.800)
     )
 
     private const val IDW_POWER = 2.0  // Higher = more weight to closer points
