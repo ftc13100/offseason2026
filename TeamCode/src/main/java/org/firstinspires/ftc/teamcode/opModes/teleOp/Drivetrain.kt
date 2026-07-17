@@ -55,6 +55,7 @@ class Drivetrain : NextFTCOpMode() {
     private lateinit var frontRightMotor: MotorEx
     private lateinit var backLeftMotor: MotorEx
     private lateinit var backRightMotor: MotorEx
+    private lateinit var logger: LogTest
 
     private lateinit var driverControlled: MecanumDriverControlled
 
@@ -92,6 +93,7 @@ class Drivetrain : NextFTCOpMode() {
     override fun onStartButtonPressed() {
         // NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
+        logger = LogTest()
 
         driverControlled = MecanumDriverControlled(
             frontLeftMotor,
@@ -353,12 +355,13 @@ class Drivetrain : NextFTCOpMode() {
 
 //            telemetry.addData("analog", "%.0f", (Spindexer.analogS.voltage/3.225 * 4000.0))
             telemetry.addData("Full?", Spindexer.isFull)
-//            telemetry.addData("S0 ", Spindexer.detectColorRGB(Spindexer.color0))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color0.normalizedColors.alpha)
-//            telemetry.addData("S1 ", Spindexer.detectColorRGB(Spindexer.color1))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color1.normalizedColors.alpha)
-//            telemetry.addData("S2 ", Spindexer.detectColorRGB(Spindexer.color2))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color2.normalizedColors.alpha)
+            Log.d("ShooterVel", Shooter.shooter.velocity)
+            logger.log(
+                System.currentTimeMillis(),
+                Shooter.shooter.velocity
+            )
+
+
 
             telemetry.update()
 
@@ -370,5 +373,7 @@ class Drivetrain : NextFTCOpMode() {
     override fun onStop() {
         BindingManager.reset()
         IndicatorLED.stop()
+        logger.close()
+
     }
 }
