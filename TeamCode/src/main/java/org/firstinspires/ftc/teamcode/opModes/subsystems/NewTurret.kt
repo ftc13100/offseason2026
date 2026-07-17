@@ -12,31 +12,39 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import com.pedropathing.math.Vector
-import dev.nextftc.control.builder.controlSystem
-import dev.nextftc.control.feedback.PIDCoefficients
+import com.qualcomm.robotcore.hardware.AnalogInput
 import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter
 import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter.goalFar
 
 @Configurable
 object NewTurret : Subsystem {
 
-    //val backRightMotor = MotorEx("backRight").brakeMode()
-
     lateinit var turret1: Servo
     lateinit var turret2: Servo
+    lateinit var turretDigital: MotorEx
+    lateinit var turretAnalog: AnalogInput
 
     val TURRET_LIMIT_LOW = 22.2
     val TURRET_LIMIT_HIGH = 337.8
 
-    var turretEInitialized : Boolean = false
-    var turretEOffset = 0.0
     var targetServoPosition = 0.5  // 0.5 = straight back
     var targetAngleRobotRef: Double = 180.0 // 0 is facing forward, CCW increasing
     var targetAngleField: Double = 270.0 // 0 is right, increases CCW
 
     var targetAngleStatic: Double = 0.0
     var targetAngleAV: Double = 0.0
+
+    val TURRET_HEADING_MAX = 330.0
+    val TURRET_ABS_V_MAX = 3.225
+    val TURRET_MAX_TOLERANCE = 5 // Uses degrees TODO: Tune
+
+    var turretOffset = 0.0
+    var turretRelativePos = 0.0
+    val turretDigitalTPD = 1 // TODO: Tune
+    var turretAbsolutePos = 0.0
+    var idealAngle = 0.0
+
+    var targetReached = false
 
     @JvmField var goalTrackingActive = false
     @JvmField var kVF = -4.5
@@ -55,6 +63,12 @@ object NewTurret : Subsystem {
     override fun initialize() {
         turret1 = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(Servo::class.java, "turret1")
         turret2 = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(Servo::class.java, "turret2")
+        turretDigital = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(MotorEx::class.java, "turretDigital")
+        turretAnalog = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(AnalogInput::class.java, "turretAnalog")
+
+        turretOffset = (turretAnalog.voltage / TURRET_ABS_V_MAX) * TURRET_HEADING_MAX
+
+        targetReached = false
     }
 
     //val encoderDPosition = { backRightMotor.currentPosition - turretEOffset}
@@ -96,6 +110,8 @@ object NewTurret : Subsystem {
         if (targetAngleRobotRef > 360.0) {
             targetAngleRobotRef -= 360.0
         }
+
+        idealAngle = targetAngleRobotRef
 
         if(targetAngleRobotRef < TURRET_LIMIT_LOW)
             targetAngleRobotRef = TURRET_LIMIT_LOW;
@@ -154,5 +170,10 @@ object NewTurret : Subsystem {
         targetAngleStatic = targetAngleField + turretRobotAdj;
         targetAngleAV = targetAngleField + turretRobotAdj + (angularVel * kVF)
         toAngle(targetAngleAV + manualOffsetAngle)
+
+        turretRelativePos = turretDigital.currentPosition / turretDigitalTPD
+        turretAbsolutePos = turretRelativePos + turretOffset
+
+        if (abs(turretAbsolutePos - idealAngle) < TURRET_MAX_TOLERANCE) targetReached = true else targetReached = false
     }
 }

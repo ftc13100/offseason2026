@@ -67,13 +67,14 @@ class Drivetrain : NextFTCOpMode() {
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
 
-    private val scaledCloseShootingZone = Triangle(Point(-5.75, 149.75),
-                                                   Point(149.75, 149.75),
+
+    private val scaledCloseShootingZone = Triangle(Point(0.0, 138.25),
+                                                   Point(144.0, 138.25),
                                                    Point(72.0, 66.25),) // Scaled +5.75in for robot
 
-    private val scaledFarShootingZone = Triangle(Point(54.25, -5.75),
-                                                   Point(72.0, 17.75),
-                                                   Point(89.75, -5.75)) // Scaled +5.75in for robot
+    private val scaledFarShootingZone = Triangle(Point(42.25, 0.0),
+                                                   Point(72.0, 29.75),
+                                                   Point(101.75, 0.0)) // Scaled +5.75in for robot
 
     override fun onInit() {
 
@@ -114,7 +115,7 @@ class Drivetrain : NextFTCOpMode() {
         driverControlled.scalar = 1.0
 
         // Reset location and heading
-        Gamepads.gamepad1.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad1.rightTrigger.asButton { it > 0.5 }
+        (Gamepads.gamepad1.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad1.rightTrigger.asButton { it > 0.5 }) // If this doesn't work, use rt as escape key
             .whenBecomesTrue {
                 if (PoseStorage.blueAlliance) {
                     follower.pose = Pose(19.25, 121.5, Math.toRadians(140.0))
@@ -232,8 +233,11 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad1.left_trigger > 0.4 }
             .whenTrue {
-                if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone) || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
-                    Spindexer.spinShot()
+                if (NewTurret.targetReached) {
+                    if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
+                        || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+                        Spindexer.spinShot()
+                    }
                 }
             }
             .whenBecomesFalse {
@@ -285,7 +289,7 @@ class Drivetrain : NextFTCOpMode() {
                 }
             }
         // Switch alliance (works only in test mode where Teleop was started without Auto)
-        button { gamepad2.right_stick_button }
+        (Gamepads.gamepad2.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad2.rightTrigger.asButton { it > 0.5 })
             .toggleOnBecomesTrue()
             .whenBecomesTrue {
                 if (testMode) {
@@ -340,7 +344,6 @@ class Drivetrain : NextFTCOpMode() {
 
             telemetry.addData("Pos", "(%.1f, %.1f, %.1f), Tur: (%.1f, %.1f)", follower.pose.x, follower.pose.y, Math.toDegrees(follower.heading), NewTurret.turretX, NewTurret.turretY)
 
-
             telemetry.addData("Shooter", "V: %.0f, T: %.0f, Offset: %.0f",Shooter.shooter.velocity, Shooter.target, Shooter.manualOffset)
             telemetry.addData("Turret", "F: %.1f, R: %.1f, S: %.3f",NewTurret.targetAngleField, NewTurret.targetAngleRobotRef, NewTurret.targetServoPosition)
             //    telemetry.addData("TurretEnc", "E: %.0f, A: %.1f, Err: %.1f",NewTurret.encoderDPosition(), NewTurret.encoderDAngle())
@@ -380,6 +383,12 @@ class Drivetrain : NextFTCOpMode() {
                     "None"
                 }
             ) // Only updates when LT is held
+
+            // Turret Testing
+            telemetry.addData("TurretDigitalTicks", NewTurret.turretDigital.currentPosition)
+            telemetry.addData("TurretRelativePos", NewTurret.turretRelativePos)
+            telemetry.addData("TurretAbsolutePos", NewTurret.turretAbsolutePos)
+            telemetry.addData("TurretOffset", NewTurret.turretOffset)
 
             telemetry.update()
 
