@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode.opModes.teleOp
 
 import com.pedropathing.geometry.Pose
+import com.pedropathing.geometry.BezierLine
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotor
 import dev.nextftc.bindings.BindingManager
 import dev.nextftc.bindings.button
 import dev.nextftc.core.components.BindingsComponent
 import dev.nextftc.core.components.SubsystemComponent
-import dev.nextftc.core.commands.CommandManager
 import dev.nextftc.core.units.rad
 import dev.nextftc.extensions.pedro.PedroComponent
 import dev.nextftc.extensions.pedro.PedroComponent.Companion.follower
@@ -17,9 +17,7 @@ import dev.nextftc.ftc.components.BulkReadComponent
 import dev.nextftc.hardware.driving.FieldCentric
 import dev.nextftc.hardware.driving.MecanumDriverControlled
 import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
-import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
 import org.firstinspires.ftc.teamcode.opModes.subsystems.PoseStorage
@@ -28,6 +26,15 @@ import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.Shooter
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.ShooterAngle
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants
 import kotlin.math.abs
+import com.pedropathing.geometry.BezierCurve
+import dev.nextftc.core.commands.CommandManager
+import dev.nextftc.core.commands.delays.Delay
+import dev.nextftc.core.commands.groups.ParallelGroup
+import dev.nextftc.core.commands.groups.SequentialGroup
+import dev.nextftc.extensions.pedro.FollowPath
+import dev.nextftc.core.commands.Command
+import org.firstinspires.ftc.teamcode.opModes.auto.autoPaths.blueAutoPaths
+import kotlin.time.Duration.Companion.seconds
 
 private  const val TELEMETRY_INTERVAL:Int = 250
 
@@ -36,7 +43,7 @@ class Drivetrain : NextFTCOpMode() {
     init {
         addComponents(
             SubsystemComponent(
-                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage
+                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, blueAutoPaths
             ),
             BindingsComponent,
             BulkReadComponent,
@@ -65,6 +72,8 @@ class Drivetrain : NextFTCOpMode() {
     private var testMode = false
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
+    private var macroCommand: Command? = null
+    private var pathCommand: Command? = null
 
     override fun onInit() {
 
@@ -100,7 +109,7 @@ class Drivetrain : NextFTCOpMode() {
             -Gamepads.gamepad1.leftStickY,
             Gamepads.gamepad1.leftStickX,
             Gamepads.gamepad1.rightStickX,
-            mode = FieldCentric { follower.pose.heading.rad }
+            //mode = FieldCentric { follower.pose.heading.rad }
         )
         driverControlled.scalar = 1.0
 
@@ -288,22 +297,94 @@ class Drivetrain : NextFTCOpMode() {
 //                    limelight.pipelineSwitch(1)
                 }
             }
+
+        // tele-pathing to auto park
+        // add reset position first later to make accurate at the end of a match
+        button { gamepad1.a }
+            .whenBecomesTrue {
+
+                if (PoseStorage.blueAlliance) {
+                    follower.pose = Pose(10.5, 8.5, Math.toRadians(180.0)).mirror()
+                } else {
+                    follower.pose = Pose(10.5, 8.5, Math.toRadians(180.0))
+                }
+
+                val targetPose = if (PoseStorage.blueAlliance) {
+                    Pose(39.0, 32.0, 0.0).mirror()
+                } else {
+                    Pose(39.0, 32.0, 0.0)
+                }
+
+                val path = follower.pathBuilder()
+                    .addPath(BezierLine(follower.pose, targetPose))
+                    .setLinearHeadingInterpolation(follower.pose.heading, targetPose.heading)
+                    .build()
+
+                pathCommand = FollowPath(path,true)
+                CommandManager.scheduleCommand(pathCommand!!)
+            }
+
+        button { gamepad1.x }
+            .whenBecomesTrue {
+                val blue = PoseStorage.blueAlliance
+
+                //poses based on alliance
+                val gatePose = if (blue) blueAutoPaths.gate else blueAutoPaths.gate.mirror()
+                val gateBackPose = if (blue) blueAutoPaths.gateBack else blueAutoPaths.gateBack.mirror()
+                val controlPose = if (blue) blueAutoPaths.PGPcontrol else blueAutoPaths.PGPcontrol.mirror()
+
+                // Path to the gate
+                val toGate = follower.pathBuilder()
+                    .addPath(BezierCurve(follower.pose, controlPose, gatePose))
+                    .setLinearHeadingInterpolation(follower.pose.heading, gatePose.heading, 0.5)
+                    .build()
+
+                // Path back to the shooting position
+                val backToShoot = follower.pathBuilder()
+                    .addPath(BezierCurve(gatePose, controlPose, gateBackPose))
+                    .setTangentHeadingInterpolation()
+                    .setReversed()
+                    .build()
+
+                macroCommand = SequentialGroup(
+                    ParallelGroup(
+                        Spindexer.toIntakePos,
+                        Intake.spinFastAuto,
+                        FollowPath(toGate)
+                    ),
+                    Delay(0.6.seconds),
+                    Intake.spinStopAuto,
+                    FollowPath(backToShoot,false),
+                    Spindexer.spinShot,
+                    Delay(0.5.seconds),
+                    Spindexer.stopShot
+                )
+                CommandManager.scheduleCommand(macroCommand!!)
+            }
     }
 
     override fun onUpdate() {
         BindingManager.update()
-        driverControlled.update()
-        follower.update()
 
-        val now = System.nanoTime() / 1_000_000.0
-
-        if(firstOnUpdate)
-        {
-            lastTelemetryTime = now
-            lastLoopTime = now
-            firstOnUpdate = false
-            return
+        if (follower.isBusy) {
+            if (abs(gamepad1.left_stick_y) > 0.1 ||
+                abs(gamepad1.left_stick_x) > 0.1 ||
+                abs(gamepad1.right_stick_x) > 0.1
+            ) {
+                macroCommand?.let {
+                    CommandManager.cancelCommand(it)
+                    macroCommand = null
+                }
+                pathCommand?.let {
+                    CommandManager.cancelCommand(it)
+                    pathCommand = null
+                }
+                follower.breakFollowing()
+            }
         }
+
+        follower.update()
+        driverControlled.update()
 
         if(NewTurret.goalTrackingActive) {
             val shot = if (!PoseStorage.blueAlliance) BiLinearShooter.getShot(
@@ -315,9 +396,20 @@ class Drivetrain : NextFTCOpMode() {
             BiLinearShooter.applyShot(shot) // rather than in onUpdate
         }
 
+        val now = System.nanoTime() / 1_000_000.0
+
+        if(firstOnUpdate)
+        {
+            lastTelemetryTime = now
+            lastLoopTime = now
+            firstOnUpdate = false
+            return
+        }
+
         val telemetryTime = (now - lastTelemetryTime)
         val loopTime = (now - lastLoopTime)
         if(loopTime > maxLoopTime) maxLoopTime = loopTime
+
         if((loopTimeAverage < 0.5 * loopTime) || (loopTimeAverage > 1.5 * loopTime))
             loopTimeAverage = loopTime
         else
