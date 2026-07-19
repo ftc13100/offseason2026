@@ -13,6 +13,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import com.pedropathing.math.Vector
 import com.qualcomm.robotcore.hardware.AnalogInput
+import com.qualcomm.robotcore.hardware.DcMotorEx
 import dev.nextftc.hardware.impl.MotorEx
 import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter.goalFar
 
@@ -22,7 +23,6 @@ object NewTurret : Subsystem {
     lateinit var turret1: Servo
     lateinit var turret2: Servo
     lateinit var turretDigital: MotorEx
-    lateinit var turretAnalog: AnalogInput
 
     val TURRET_LIMIT_LOW = 22.2
     val TURRET_LIMIT_HIGH = 337.8
@@ -33,18 +33,18 @@ object NewTurret : Subsystem {
 
     var targetAngleStatic: Double = 0.0
     var targetAngleAV: Double = 0.0
-
-    val TURRET_HEADING_MAX = 330.0
-    val TURRET_ABS_V_MAX = 3.225
-    val TURRET_MAX_TOLERANCE = 5 // Uses degrees TODO: Tune
+    val TURRET_MAX_TOLERANCE_DEGREES = 5 // Uses degrees TODO: Tune
+    val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 5 // Uses degrees TODO: Tune
+    val TURRET_DIGITAL_TPD = 1 // TODO: Tune
 
     var turretOffset = 0.0
-    var turretRelativePos = 0.0
-    val turretDigitalTPD = 1 // TODO: Tune
+    var collectedTurretOffset = false
+    var turretRelativePos = 1000.0
+    var lastTurretRelativePos = 999.0
     var turretAbsolutePos = 0.0
     var idealAngle = 0.0
 
-    var targetReached = false
+    var targetReached = true
 
     @JvmField var goalTrackingActive = false
     @JvmField var kVF = -4.5
@@ -63,10 +63,8 @@ object NewTurret : Subsystem {
     override fun initialize() {
         turret1 = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(Servo::class.java, "turret1")
         turret2 = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(Servo::class.java, "turret2")
-        turretDigital = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(MotorEx::class.java, "turretDigital")
-        turretAnalog = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(AnalogInput::class.java, "turretAnalog")
-
-        turretOffset = (turretAnalog.voltage / TURRET_ABS_V_MAX) * TURRET_HEADING_MAX
+        val frontRightMotor = dev.nextftc.ftc.ActiveOpMode.hardwareMap.get(DcMotorEx::class.java, "frontRight")
+        turretDigital = MotorEx(frontRightMotor)
 
         targetReached = false
     }
@@ -171,9 +169,22 @@ object NewTurret : Subsystem {
         targetAngleAV = targetAngleField + turretRobotAdj + (angularVel * kVF)
         toAngle(targetAngleAV + manualOffsetAngle)
 
-        turretRelativePos = turretDigital.currentPosition / turretDigitalTPD
+        lastTurretRelativePos = turretRelativePos
+        turretRelativePos = turretDigital.currentPosition * TURRET_DIGITAL_TPD
         turretAbsolutePos = turretRelativePos + turretOffset
 
-        if (abs(turretAbsolutePos - idealAngle) < TURRET_MAX_TOLERANCE) targetReached = true else targetReached = false
+        if (collectedTurretOffset && abs(turretAbsolutePos - idealAngle) < TURRET_MAX_TOLERANCE_DEGREES) {
+            targetReached = true
+        } else {
+            targetReached = false
+        }
+
+        if (!collectedTurretOffset) {
+            val deltaTurretHeading = abs(turretRelativePos - lastTurretRelativePos)
+            if (deltaTurretHeading < TURRET_CALIBRATION_MAX_DELTA_DEGREES) {
+                turretOffset = targetAngleAV
+                collectedTurretOffset = true
+            }
+        }
     }
 }

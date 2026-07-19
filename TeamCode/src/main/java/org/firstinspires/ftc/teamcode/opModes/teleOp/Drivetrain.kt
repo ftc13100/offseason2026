@@ -16,6 +16,7 @@ import dev.nextftc.ftc.NextFTCOpMode
 import dev.nextftc.ftc.components.BulkReadComponent
 import dev.nextftc.hardware.driving.FieldCentric
 import dev.nextftc.hardware.driving.MecanumDriverControlled
+import dev.nextftc.hardware.driving.RobotCentric
 import dev.nextftc.hardware.impl.MotorEx
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.teamcode.opModes.subsystems.IndicatorLED
@@ -95,13 +96,11 @@ class Drivetrain : NextFTCOpMode() {
             it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
         }
         follower.update()
-        // NewTurret.trackTarget()
     }
 
     override fun onStartButtonPressed() {
         // NewTurret.backRightMotor.atPosition(6000.0)
-        NewTurret.trackTarget()
-
+        // NewTurret.trackTarget()
         driverControlled = MecanumDriverControlled(
             frontLeftMotor,
             frontRightMotor,
@@ -112,6 +111,8 @@ class Drivetrain : NextFTCOpMode() {
             Gamepads.gamepad1.rightStickX,
             mode = FieldCentric { follower.pose.heading.rad }
         )
+
+
         driverControlled.scalar = 1.0
 
         // Reset location and heading
@@ -389,6 +390,9 @@ class Drivetrain : NextFTCOpMode() {
             telemetry.addData("TurretRelativePos", NewTurret.turretRelativePos)
             telemetry.addData("TurretAbsolutePos", NewTurret.turretAbsolutePos)
             telemetry.addData("TurretOffset", NewTurret.turretOffset)
+            telemetry.addData("TurretTarget", NewTurret.idealAngle)
+            telemetry.addData("TurretVoltage", NewTurret.turretAnalog.voltage)
+
 
             telemetry.update()
 
