@@ -12,7 +12,6 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import com.pedropathing.math.Vector
-import com.qualcomm.robotcore.hardware.AnalogInput
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import dev.nextftc.hardware.impl.MotorEx
 import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter.goalFar
@@ -35,12 +34,12 @@ object NewTurret : Subsystem {
     var targetAngleAV: Double = 0.0
     val TURRET_MAX_TOLERANCE_DEGREES = 5 // Uses degrees TODO: Tune
     val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 5 // Uses degrees TODO: Tune
-    val TURRET_DIGITAL_TPD = 12000
+    val TURRET_DIGITAL_TPD = 10/3
 
     var turretOffset = 0.0
-    var collectedTurretOffset = false
     var turretRelativePos = 1000.0
     var lastTurretRelativePos = 999.0
+    var ticksSinceLastPositionReset = 0
     var turretAbsolutePos = 0.0
     var idealAngle = 0.0
 
@@ -144,12 +143,9 @@ object NewTurret : Subsystem {
     override fun periodic() {
         if (!goalTrackingActive) return
 
-        if (!collectedTurretOffset) {
-            val deltaTurretHeading = abs(turretRelativePos - lastTurretRelativePos)
-            if (deltaTurretHeading < TURRET_CALIBRATION_MAX_DELTA_DEGREES) {
-                turretOffset = targetAngleAV - turretRelativePos
-                collectedTurretOffset = true
-            }
+        val deltaTurretHeading = abs(turretRelativePos - lastTurretRelativePos)
+        if (deltaTurretHeading < TURRET_CALIBRATION_MAX_DELTA_DEGREES) {
+            turretOffset = targetAngleAV - turretRelativePos
         }
 
         var angularVel = follower.angularVelocity // rad/sec
@@ -177,11 +173,17 @@ object NewTurret : Subsystem {
         targetAngleAV = targetAngleField + turretRobotAdj + (angularVel * kVF)
         toAngle(targetAngleAV + manualOffsetAngle)
 
-        lastTurretRelativePos = turretRelativePos
-        turretRelativePos = turretDigital.currentPosition * TURRET_DIGITAL_TPD
+        if (ticksSinceLastPositionReset > 5) {
+            lastTurretRelativePos = turretRelativePos
+            ticksSinceLastPositionReset = 0
+        } else {
+            ticksSinceLastPositionReset++
+        }
+
+        turretRelativePos = turretDigital.currentPosition / TURRET_DIGITAL_TPD
         turretAbsolutePos = turretRelativePos + turretOffset
 
-        if (collectedTurretOffset && abs(turretAbsolutePos - idealAngle) < TURRET_MAX_TOLERANCE_DEGREES) {
+        if (abs(turretAbsolutePos - idealAngle) < TURRET_MAX_TOLERANCE_DEGREES) {
             targetReached = true
         } else {
             targetReached = false

@@ -1,6 +1,4 @@
 package org.firstinspires.ftc.teamcode.opModes.subsystems
-import android.R
-import dev.nextftc.core.commands.Command
 import dev.nextftc.core.subsystems.Subsystem
 import dev.nextftc.ftc.ActiveOpMode.hardwareMap
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.Color

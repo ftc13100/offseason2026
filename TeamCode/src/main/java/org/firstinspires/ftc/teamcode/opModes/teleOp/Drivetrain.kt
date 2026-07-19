@@ -100,7 +100,7 @@ class Drivetrain : NextFTCOpMode() {
 
     override fun onStartButtonPressed() {
         // NewTurret.backRightMotor.atPosition(6000.0)
-        // NewTurret.trackTarget()
+        NewTurret.trackTarget()
         driverControlled = MecanumDriverControlled(
             frontLeftMotor,
             frontRightMotor,
@@ -234,12 +234,7 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad1.left_trigger > 0.4 }
             .whenTrue {
-                if (NewTurret.targetReached) {
-                    if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
-                        || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
-                        Spindexer.spinShot()
-                    }
-                }
+                Spindexer.spinShot()
             }
             .whenBecomesFalse {
                 Spindexer.stopShot()
@@ -331,6 +326,15 @@ class Drivetrain : NextFTCOpMode() {
             BiLinearShooter.applyShot(shot) // rather than in onUpdate
         }
 
+        if (!Intake.intakeRunning && NewTurret.targetReached) {
+            if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
+                || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+                Spindexer.spinShot()
+            }
+        } else {
+            Spindexer.stopShot()
+        }
+
         val telemetryTime = (now - lastTelemetryTime)
         val loopTime = (now - lastLoopTime)
         if(loopTime > maxLoopTime) maxLoopTime = loopTime
@@ -383,15 +387,11 @@ class Drivetrain : NextFTCOpMode() {
                 } else {
                     "None"
                 }
-            ) // Only updates when LT is held
+            ) // Only UPDATES when LT is held, the line is always here
 
             // Turret Testing
-            telemetry.addData("TurretDigitalTicks", NewTurret.turretDigital.currentPosition)
-            telemetry.addData("TurretRelativePos", NewTurret.turretRelativePos)
-            telemetry.addData("TurretAbsolutePos", NewTurret.turretAbsolutePos)
-            telemetry.addData("TurretOffset", NewTurret.turretOffset)
-            telemetry.addData("TurretTarget", NewTurret.idealAngle)
-            telemetry.addData("TurretVoltage", NewTurret.turretAnalog.voltage)
+            telemetry.addData("TurretTargetReached", NewTurret.targetReached)
+
 
 
             telemetry.update()
@@ -402,6 +402,7 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onStop() {
+        NewTurret.stopTracking()
         IndicatorLED.forceStop()
         BindingManager.reset()
         sleep(100)
