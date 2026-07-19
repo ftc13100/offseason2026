@@ -366,20 +366,23 @@ class Drivetrain : NextFTCOpMode() {
     override fun onUpdate() {
         BindingManager.update()
 
-        if (follower.isBusy) {
+        // Check if commands are active
+        val macroActive = macroCommand?.let { CommandManager.isScheduled(it) } ?: false
+        val pathActive = pathCommand?.let { CommandManager.isScheduled(it) } ?: false
+
+        if (macroActive || pathActive || follower.isBusy) {
             if (abs(gamepad1.left_stick_y) > 0.1 ||
                 abs(gamepad1.left_stick_x) > 0.1 ||
                 abs(gamepad1.right_stick_x) > 0.1
             ) {
-                macroCommand?.let {
-                    CommandManager.cancelCommand(it)
-                    macroCommand = null
-                }
-                pathCommand?.let {
-                    CommandManager.cancelCommand(it)
-                    pathCommand = null
-                }
+                macroCommand?.let { CommandManager.cancelCommand(it); macroCommand = null }
+                pathCommand?.let { CommandManager.cancelCommand(it); pathCommand = null }
+
                 follower.breakFollowing()
+                // Pedro uses coast, motors need to go back to brake mode for Tele
+                listOf(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor).forEach {
+                    it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
+                }
             }
         }
 
