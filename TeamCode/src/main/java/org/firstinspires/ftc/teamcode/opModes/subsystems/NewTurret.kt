@@ -35,7 +35,7 @@ object NewTurret : Subsystem {
     var targetAngleAV: Double = 0.0
     val TURRET_MAX_TOLERANCE_DEGREES = 5 // Uses degrees TODO: Tune
     val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 5 // Uses degrees TODO: Tune
-    val TURRET_DIGITAL_TPD = 1 // TODO: Tune
+    val TURRET_DIGITAL_TPD = 12000
 
     var turretOffset = 0.0
     var collectedTurretOffset = false
@@ -144,6 +144,14 @@ object NewTurret : Subsystem {
     override fun periodic() {
         if (!goalTrackingActive) return
 
+        if (!collectedTurretOffset) {
+            val deltaTurretHeading = abs(turretRelativePos - lastTurretRelativePos)
+            if (deltaTurretHeading < TURRET_CALIBRATION_MAX_DELTA_DEGREES) {
+                turretOffset = targetAngleAV - turretRelativePos
+                collectedTurretOffset = true
+            }
+        }
+
         var angularVel = follower.angularVelocity // rad/sec
 
         var robotHeading = Math.toDegrees(follower.heading)
@@ -177,14 +185,6 @@ object NewTurret : Subsystem {
             targetReached = true
         } else {
             targetReached = false
-        }
-
-        if (!collectedTurretOffset) {
-            val deltaTurretHeading = abs(turretRelativePos - lastTurretRelativePos)
-            if (deltaTurretHeading < TURRET_CALIBRATION_MAX_DELTA_DEGREES) {
-                turretOffset = targetAngleAV
-                collectedTurretOffset = true
-            }
         }
     }
 }

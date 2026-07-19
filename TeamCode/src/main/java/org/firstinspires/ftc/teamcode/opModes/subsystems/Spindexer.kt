@@ -375,7 +375,7 @@ object Spindexer : Subsystem {
     val isBusy: Boolean
         get() = state == State.PID || (state == State.MANUAL && spindexer.power > 0.2)
 
-    fun pixelCount(): Int {
+    fun artifactCount(): Int {
         var count = 0
         if (cached0 != SpindexerColor.EMPTY) count++
         if (cached1 != SpindexerColor.EMPTY) count++

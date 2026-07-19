@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes.subsystems
+import android.R
 import dev.nextftc.core.commands.Command
 import dev.nextftc.core.subsystems.Subsystem
 import dev.nextftc.ftc.ActiveOpMode.hardwareMap
@@ -9,19 +10,17 @@ import java.lang.Thread.sleep
 
 object IndicatorLED : Subsystem {
     private lateinit var prism: GoBildaPrismDriver
-    private var colorIndex = 0
     private var previousColorIndex = 0
 
     override fun initialize() {
         prism = hardwareMap.get(GoBildaPrismDriver::class.java, "led")
-        updateLED()
     }
 
     override fun periodic() {
-        colorIndex = Spindexer.pixelCount()
+        var colorIndex = Spindexer.artifactCount()
         if (Intake.intakeRunning) colorIndex += 4
 
-        if (colorIndex != previousColorIndex) updateLED()
+        if (colorIndex != previousColorIndex) updateLED(colorIndex)
 
         previousColorIndex = colorIndex
     }
@@ -44,18 +43,20 @@ object IndicatorLED : Subsystem {
 
         for (lIndex in layers.indices) {
             prism.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, layers[lIndex])
-            sleep(500)
+            sleep(200)
             prism.saveCurrentAnimationsToArtboard(GoBildaPrismDriver.Artboard.entries[lIndex])
         }
 
         prism.clearAllAnimations()
     }
 
-    fun updateLED() {
+    fun updateLED(colorIndex: Int) {
         prism.loadAnimationsFromArtboard(GoBildaPrismDriver.Artboard.entries[colorIndex])
     }
 
-    val stop = run { prism.clearAllAnimations() }.setInterruptible(false) // Still can't run properly on program stop, runs anywhere else though
+    // TODO: Get this to work on opmode shutdown
+    // This runs properly anywhere else though
+    val stop = run { prism.clearAllAnimations() }.setInterruptible(false)
 
     fun forceStop() { prism.clearAllAnimations() }
 }
