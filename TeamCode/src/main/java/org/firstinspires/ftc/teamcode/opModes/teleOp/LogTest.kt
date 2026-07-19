@@ -13,13 +13,13 @@ class LogTest {
 
         writer = BufferedWriter(FileWriter(file))
 
-        // CSV header
-        writer.write("Time, Velocity")
+        //CSV header
+        writer.write("Time, ShooterVelocity, Position X, Position Y,")
         writer.newLine()
     }
 
-    fun log(time: Long, shooterVelocity: Double) {
-        writer.write("$time,$shooterVelocity")
+    fun log(time: Long, shooterVelocity: Double, positionX:Double, positionY: Double) {
+        writer.write("$time,$shooterVelocity,%.1f,%.1f".format(positionX, positionY))
         writer.newLine()
     }
 
