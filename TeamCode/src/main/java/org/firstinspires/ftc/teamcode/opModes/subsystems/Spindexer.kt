@@ -35,8 +35,6 @@ object Spindexer : Subsystem {
         get() = (360.0 / (4000.0) * spindexer.currentPosition)
 
     val spindexer = MotorEx("spindexer").brakeMode()
-    lateinit var prism: GoBildaPrismDriver
-    lateinit var leds: LedArtboard
     lateinit var color0: NormalizedColorSensor
     lateinit var color1: NormalizedColorSensor
     lateinit var color2: NormalizedColorSensor
@@ -112,8 +110,6 @@ object Spindexer : Subsystem {
         }
 
         lastIntakeState = currentlyRunning
-
-        //refreshLeds(currentlyRunning)
 
         when (state) {
             State.PID -> {
@@ -388,8 +384,6 @@ object Spindexer : Subsystem {
     }
 
     override fun initialize() {
-        prism = hardwareMap.get(GoBildaPrismDriver::class.java, "led")
-        leds = LedArtboard(prism)
         analogS = hardwareMap.get(AnalogInput::class.java, "analogS")
         color0 = hardwareMap.get(NormalizedColorSensor::class.java, "cs0")
         color0.gain = 12.0f

@@ -3,23 +3,20 @@ package org.firstinspires.ftc.teamcode.opModes.teleOp
 import com.pedropathing.geometry.Pose
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotor
+import com.qualcomm.robotcore.util.ElapsedTime
 import dev.nextftc.bindings.BindingManager
 import dev.nextftc.bindings.button
 import dev.nextftc.core.components.BindingsComponent
 import dev.nextftc.core.components.SubsystemComponent
-import dev.nextftc.core.commands.CommandManager
-import dev.nextftc.core.units.rad
 import dev.nextftc.extensions.pedro.PedroComponent
 import dev.nextftc.extensions.pedro.PedroComponent.Companion.follower
 import dev.nextftc.ftc.Gamepads
 import dev.nextftc.ftc.NextFTCOpMode
 import dev.nextftc.ftc.components.BulkReadComponent
-import dev.nextftc.hardware.driving.FieldCentric
 import dev.nextftc.hardware.driving.MecanumDriverControlled
 import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
+import org.firstinspires.ftc.teamcode.opModes.subsystems.IndicatorLED
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
-import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
 import org.firstinspires.ftc.teamcode.opModes.subsystems.PoseStorage
@@ -29,6 +26,7 @@ import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.ShooterAngle
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants
 import kotlin.math.abs
 
+
 private  const val TELEMETRY_INTERVAL:Int = 250
 
 @TeleOp(name = "Drivetrain")
@@ -36,7 +34,7 @@ class Drivetrain : NextFTCOpMode() {
     init {
         addComponents(
             SubsystemComponent(
-                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage
+                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, IndicatorLED
             ),
             BindingsComponent,
             BulkReadComponent,
@@ -54,6 +52,7 @@ class Drivetrain : NextFTCOpMode() {
     private lateinit var frontRightMotor: MotorEx
     private lateinit var backLeftMotor: MotorEx
     private lateinit var backRightMotor: MotorEx
+    private lateinit var logger: LogTest
 
     private lateinit var driverControlled: MecanumDriverControlled
 
@@ -65,6 +64,7 @@ class Drivetrain : NextFTCOpMode() {
     private var testMode = false
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
+    private val timer = ElapsedTime()
 
     override fun onInit() {
 
@@ -85,12 +85,15 @@ class Drivetrain : NextFTCOpMode() {
             it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
         }
         follower.update()
-//        NewTurret.trackTarget()
+        // NewTurret.trackTarget()
     }
 
     override fun onStartButtonPressed() {
-//        NewTurret.backRightMotor.atPosition(6000.0)
+        timer.reset()
+
+        // NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
+        logger = LogTest()
 
         driverControlled = MecanumDriverControlled(
             frontLeftMotor,
@@ -100,7 +103,7 @@ class Drivetrain : NextFTCOpMode() {
             -Gamepads.gamepad1.leftStickY,
             Gamepads.gamepad1.leftStickX,
             Gamepads.gamepad1.rightStickX,
-            mode = FieldCentric { follower.pose.heading.rad }
+            // mode = FieldCentric { follower.pose.heading.rad }
         )
         driverControlled.scalar = 1.0
 
@@ -291,6 +294,12 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onUpdate() {
+        logger.log(
+            timer.milliseconds().toLong(),
+            Shooter.shooter.velocity,
+            follower.pose.x,
+            follower.pose.y
+        )
         BindingManager.update()
         driverControlled.update()
         follower.update()
@@ -352,12 +361,9 @@ class Drivetrain : NextFTCOpMode() {
 
 //            telemetry.addData("analog", "%.0f", (Spindexer.analogS.voltage/3.225 * 4000.0))
             telemetry.addData("Full?", Spindexer.isFull)
-//            telemetry.addData("S0 ", Spindexer.detectColorRGB(Spindexer.color0))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color0.normalizedColors.alpha)
-//            telemetry.addData("S1 ", Spindexer.detectColorRGB(Spindexer.color1))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color1.normalizedColors.alpha)
-//            telemetry.addData("S2 ", Spindexer.detectColorRGB(Spindexer.color2))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color2.normalizedColors.alpha)
+
+
+
 
             telemetry.update()
 
@@ -368,5 +374,8 @@ class Drivetrain : NextFTCOpMode() {
 
     override fun onStop() {
         BindingManager.reset()
+        IndicatorLED.stop()
+        logger.close()
+
     }
 }
