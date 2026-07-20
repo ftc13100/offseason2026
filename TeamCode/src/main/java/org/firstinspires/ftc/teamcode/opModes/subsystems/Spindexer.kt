@@ -52,6 +52,7 @@ object Spindexer : Subsystem {
     private var startTime = 0L
     private var startPos = 0.0
     private var hasStopped = false
+    var atIntakePos = false
 
     val SPINDEXER_ENCODER_MAX = 4000.0
     val SPINDEXER_STEP = SPINDEXER_ENCODER_MAX / 3.0
@@ -151,6 +152,8 @@ object Spindexer : Subsystem {
         if(movePos > (SPINDEXER_STEP - SPINDEXER_TOLERANCE))
             movePos -= SPINDEXER_STEP
 
+        atIntakePos = true
+
         return spindexer.currentPosition + movePos
     }
 
@@ -234,6 +237,7 @@ object Spindexer : Subsystem {
     //    Intake.spinSlowSpeed()() // shouldn't be necessary, also is bad for battery usage when shooting
         state = State.MANUAL
         spindexer.power = spinShotSpeed
+        atIntakePos = false
     }
         .requires(this)
 
@@ -241,6 +245,7 @@ object Spindexer : Subsystem {
         //    Intake.spinSlowSpeed()() // shouldn't be necessary, also is bad for battery usage when shooting
         state = State.MANUAL
         spindexer.power = 0.5
+        atIntakePos = false
     }
         .requires(this)
 
@@ -251,6 +256,7 @@ object Spindexer : Subsystem {
             startPos = spindexer.currentPosition
             hasStopped = false
             spindexer.power = spinShotSpeed
+            atIntakePos = false
         }
         .setIsDone {
             val now = System.currentTimeMillis()

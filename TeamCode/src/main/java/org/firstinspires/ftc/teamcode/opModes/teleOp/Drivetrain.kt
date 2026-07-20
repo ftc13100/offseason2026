@@ -68,7 +68,6 @@ class Drivetrain : NextFTCOpMode() {
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
 
-
     private val scaledCloseShootingZone = Triangle(Point(0.0, 138.25),
                                                    Point(144.0, 138.25),
                                                    Point(72.0, 66.25),) // Scaled +5.75in for robot
@@ -210,12 +209,12 @@ class Drivetrain : NextFTCOpMode() {
 //                    NewTurret.adjustAngle(0.1)
 //            }
 
-        Gamepads.gamepad2.rightTrigger.asButton {it > 0.5}
+        button { gamepad1.x }
             .whenBecomesTrue {
                 Spindexer.spinShotSpeed += 0.05
             }
 
-        Gamepads.gamepad2.leftTrigger.asButton {it > 0.5}
+        button { gamepad1.b }
             .whenBecomesTrue {
                 Spindexer.spinShotSpeed -= 0.05
             }
@@ -228,8 +227,6 @@ class Drivetrain : NextFTCOpMode() {
             }
             .whenTrue {
                 Intake.spinHeld()
-                Spindexer.stopShot()
-                Spindexer.toIntakePos()
             }
             .whenBecomesFalse {
                 Intake.spinStop()
@@ -252,15 +249,6 @@ class Drivetrain : NextFTCOpMode() {
                 Spindexer.stopShot()
                 Intake.spinStop()
             }
-
-//        button { gamepad1.right_trigger > 0.4 }
-//            .whenTrue {
-//                Spindexer.spinShotIndex()
-//            }
-//            .whenBecomesFalse {
-//                Spindexer.stopShot()
-//                Intake.spinStop()
-//            }
 
         button { gamepad2.a }
             .whenTrue {
@@ -296,6 +284,7 @@ class Drivetrain : NextFTCOpMode() {
                     ShooterAngle.manualOffset = 0.0
                 }
             }
+
         // Switch alliance (works only in test mode where Teleop was started without Auto)
         (Gamepads.gamepad2.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad2.rightTrigger.asButton { it > 0.5 })
             .toggleOnBecomesTrue()
@@ -343,6 +332,9 @@ class Drivetrain : NextFTCOpMode() {
                 || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
                 Spindexer.spinShot()
             }
+        } else if (!Spindexer.atIntakePos) {
+            Spindexer.stopShot()
+            Spindexer.toIntakePos()
         }
 
         val telemetryTime = (now - lastTelemetryTime)
