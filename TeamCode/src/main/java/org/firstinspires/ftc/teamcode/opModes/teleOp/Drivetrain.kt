@@ -210,14 +210,26 @@ class Drivetrain : NextFTCOpMode() {
 //                    NewTurret.adjustAngle(0.1)
 //            }
 
+        Gamepads.gamepad2.rightTrigger.asButton {it > 0.5}
+            .whenBecomesTrue {
+                Spindexer.spinShotSpeed += 0.05
+            }
+
+        Gamepads.gamepad2.leftTrigger.asButton {it > 0.5}
+            .whenBecomesTrue {
+                Spindexer.spinShotSpeed -= 0.05
+            }
+
         //Intake artifact
         button { gamepad1.left_bumper }
             //          .toggleOnBecomesTrue()
             .whenBecomesTrue {
-                Spindexer.toIntakePos()
+                Spindexer.stopShot()
             }
             .whenTrue {
                 Intake.spinHeld()
+                Spindexer.stopShot()
+                Spindexer.toIntakePos()
             }
             .whenBecomesFalse {
                 Intake.spinStop()
@@ -326,13 +338,11 @@ class Drivetrain : NextFTCOpMode() {
             BiLinearShooter.applyShot(shot) // rather than in onUpdate
         }
 
-        if (!Intake.intakeRunning && NewTurret.targetReached) {
+        if (!intakeRunning && NewTurret.targetReached) {
             if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
                 || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
                 Spindexer.spinShot()
             }
-        } else {
-            Spindexer.stopShot()
         }
 
         val telemetryTime = (now - lastTelemetryTime)
@@ -389,10 +399,8 @@ class Drivetrain : NextFTCOpMode() {
                 }
             ) // Only UPDATES when LT is held, the line is always here
 
-            // Turret Testing
             telemetry.addData("TurretTargetReached", NewTurret.targetReached)
-
-
+            telemetry.addData("SpindexerShotSpeed", Spindexer.spinShotSpeed)
 
             telemetry.update()
 

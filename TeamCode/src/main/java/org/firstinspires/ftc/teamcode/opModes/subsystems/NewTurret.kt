@@ -108,7 +108,7 @@ object NewTurret : Subsystem {
             targetAngleRobotRef -= 360.0
         }
 
-        idealAngle = targetAngleRobotRef
+        idealAngle = targetAngleRobotRef // Ideal angle is used for comparison against encoder values, shouldn't be clamped
 
         if(targetAngleRobotRef < TURRET_LIMIT_LOW)
             targetAngleRobotRef = TURRET_LIMIT_LOW;
