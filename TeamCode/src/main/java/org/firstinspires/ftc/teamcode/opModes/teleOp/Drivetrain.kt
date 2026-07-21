@@ -1,14 +1,17 @@
 package org.firstinspires.ftc.teamcode.opModes.teleOp
 
+import com.pedropathing.geometry.BezierLine
 import com.pedropathing.geometry.Pose
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotor
 import dev.nextftc.bindings.BindingManager
 import dev.nextftc.bindings.button
+import dev.nextftc.core.commands.Command
+import dev.nextftc.core.commands.CommandManager
 import dev.nextftc.core.components.BindingsComponent
 import dev.nextftc.core.components.SubsystemComponent
-import dev.nextftc.core.commands.CommandManager
 import dev.nextftc.core.units.rad
+import dev.nextftc.extensions.pedro.FollowPath
 import dev.nextftc.extensions.pedro.PedroComponent
 import dev.nextftc.extensions.pedro.PedroComponent.Companion.follower
 import dev.nextftc.ftc.Gamepads
@@ -16,12 +19,10 @@ import dev.nextftc.ftc.NextFTCOpMode
 import dev.nextftc.ftc.components.BulkReadComponent
 import dev.nextftc.hardware.driving.FieldCentric
 import dev.nextftc.hardware.driving.MecanumDriverControlled
-import dev.nextftc.hardware.driving.RobotCentric
 import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
+import org.firstinspires.ftc.teamcode.opModes.auto.autoPaths.blueAutoPaths
 import org.firstinspires.ftc.teamcode.opModes.subsystems.IndicatorLED
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
-import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
 import org.firstinspires.ftc.teamcode.opModes.subsystems.PoseStorage
@@ -38,7 +39,8 @@ class Drivetrain : NextFTCOpMode() {
     init {
         addComponents(
             SubsystemComponent(
-                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, IndicatorLED
+                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, IndicatorLED,
+                blueAutoPaths
             ),
             BindingsComponent,
             BulkReadComponent,
@@ -67,7 +69,8 @@ class Drivetrain : NextFTCOpMode() {
     private var testMode = false
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
-
+    private var macroCommand: Command? = null
+    private var pathCommand: Command? = null
 
     private val scaledCloseShootingZone = Triangle(Point(0.0, 138.25),
                                                    Point(144.0, 138.25),
@@ -77,8 +80,33 @@ class Drivetrain : NextFTCOpMode() {
                                                    Point(72.0, 29.75),
                                                    Point(101.75, 0.0)) // Scaled +5.75in for robot
 
-    override fun onInit() {
+    fun makeDriverControlled() {
+        if (PoseStorage.blueAlliance) {
+            driverControlled = MecanumDriverControlled(
+                frontLeftMotor,
+                frontRightMotor,
+                backLeftMotor,
+                backRightMotor,
+                -Gamepads.gamepad1.leftStickY,
+                Gamepads.gamepad1.leftStickX,
+                Gamepads.gamepad1.rightStickX,
+                mode = FieldCentric { (follower.pose.heading + 180.0).rad }
+            )
+        } else {
+            driverControlled = MecanumDriverControlled(
+                frontLeftMotor,
+                frontRightMotor,
+                backLeftMotor,
+                backRightMotor,
+                -Gamepads.gamepad1.leftStickY,
+                Gamepads.gamepad1.leftStickX,
+                Gamepads.gamepad1.rightStickX,
+                mode = FieldCentric { follower.pose.heading.rad }
+            )
+        }
+    }
 
+    override fun onInit() {
         if (abs(startPose.x) < 0.1 && abs(startPose.y) < 0.1) {
             follower.setStartingPose(testingPose)
             PoseStorage.blueAlliance = false
@@ -101,17 +129,8 @@ class Drivetrain : NextFTCOpMode() {
     override fun onStartButtonPressed() {
         // NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
-        driverControlled = MecanumDriverControlled(
-            frontLeftMotor,
-            frontRightMotor,
-            backLeftMotor,
-            backRightMotor,
-            -Gamepads.gamepad1.leftStickY,
-            Gamepads.gamepad1.leftStickX,
-            Gamepads.gamepad1.rightStickX,
-            mode = FieldCentric { follower.pose.heading.rad }
-        )
 
+        makeDriverControlled()
 
         driverControlled.scalar = 1.0
 
@@ -210,14 +229,14 @@ class Drivetrain : NextFTCOpMode() {
 //                    NewTurret.adjustAngle(0.1)
 //            }
 
-        Gamepads.gamepad2.rightTrigger.asButton {it > 0.5}
+        button { gamepad1.x }
             .whenBecomesTrue {
-                Spindexer.spinShotSpeed += 0.05
+                Spindexer.spinShotSpeedOffset += 0.05
             }
 
-        Gamepads.gamepad2.leftTrigger.asButton {it > 0.5}
+        button { gamepad1.b }
             .whenBecomesTrue {
-                Spindexer.spinShotSpeed -= 0.05
+                Spindexer.spinShotSpeedOffset -= 0.05
             }
 
         //Intake artifact
@@ -228,8 +247,6 @@ class Drivetrain : NextFTCOpMode() {
             }
             .whenTrue {
                 Intake.spinHeld()
-                Spindexer.stopShot()
-                Spindexer.toIntakePos()
             }
             .whenBecomesFalse {
                 Intake.spinStop()
@@ -243,24 +260,6 @@ class Drivetrain : NextFTCOpMode() {
             .whenBecomesFalse {
                 Intake.spinStop()
             }
-
-        button { gamepad1.left_trigger > 0.4 }
-            .whenTrue {
-                Spindexer.spinShot()
-            }
-            .whenBecomesFalse {
-                Spindexer.stopShot()
-                Intake.spinStop()
-            }
-
-//        button { gamepad1.right_trigger > 0.4 }
-//            .whenTrue {
-//                Spindexer.spinShotIndex()
-//            }
-//            .whenBecomesFalse {
-//                Spindexer.stopShot()
-//                Intake.spinStop()
-//            }
 
         button { gamepad2.a }
             .whenTrue {
@@ -296,37 +295,75 @@ class Drivetrain : NextFTCOpMode() {
                     ShooterAngle.manualOffset = 0.0
                 }
             }
+
         // Switch alliance (works only in test mode where Teleop was started without Auto)
         (Gamepads.gamepad2.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad2.rightTrigger.asButton { it > 0.5 })
             .toggleOnBecomesTrue()
             .whenBecomesTrue {
                 if (testMode) {
                     PoseStorage.blueAlliance = false
+                    makeDriverControlled()
 //                    limelight.pipelineSwitch(2)
                 }
             }
             .whenBecomesFalse {
                 if (testMode) {
                     PoseStorage.blueAlliance = true
+                    makeDriverControlled()
 //                    limelight.pipelineSwitch(1)
                 }
+            }
+
+        button { gamepad1.a }
+            .whenBecomesTrue {
+
+                if (PoseStorage.blueAlliance) {
+                    follower.pose = Pose(10.5, 8.5, Math.toRadians(180.0)).mirror()
+                } else {
+                    follower.pose = Pose(10.5, 8.5, Math.toRadians(180.0))
+                }
+
+                val targetPose = if (PoseStorage.blueAlliance) {
+                    Pose(39.0, 32.0, 0.0).mirror()
+                } else {
+                    Pose(39.0, 32.0, 0.0)
+                }
+
+                val path = follower.pathBuilder()
+                    .addPath(BezierLine(follower.pose, targetPose))
+                    .setLinearHeadingInterpolation(follower.pose.heading, targetPose.heading)
+                    .build()
+
+                pathCommand = FollowPath(path,true)
+                CommandManager.scheduleCommand(pathCommand!!)
             }
     }
 
     override fun onUpdate() {
         BindingManager.update()
-        driverControlled.update()
-        follower.update()
 
-        val now = System.nanoTime() / 1_000_000.0
+        val macroActive = macroCommand?.let { CommandManager.isScheduled(it) } ?: false
+        val pathActive = pathCommand?.let { CommandManager.isScheduled(it) } ?: false
 
-        if(firstOnUpdate)
-        {
-            lastTelemetryTime = now
-            lastLoopTime = now
-            firstOnUpdate = false
-            return
+        if (macroActive || pathActive || follower.isBusy) {
+            if (abs(gamepad1.left_stick_y) > 0.1 ||
+                abs(gamepad1.left_stick_x) > 0.1 ||
+                abs(gamepad1.right_stick_x) > 0.1
+            ) {
+                macroCommand?.let { CommandManager.cancelCommand(it); macroCommand = null }
+                pathCommand?.let { CommandManager.cancelCommand(it); pathCommand = null }
+
+                follower.breakFollowing()
+                // Pedro uses coast, motors need to go back to brake mode for Tele
+                listOf(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor).forEach {
+                    it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
+                }
+                follower.breakFollowing()
+            }
         }
+
+        follower.update()
+        driverControlled.update()
 
         if(NewTurret.goalTrackingActive) {
             val shot = if (!PoseStorage.blueAlliance) BiLinearShooter.getShot(
@@ -338,11 +375,23 @@ class Drivetrain : NextFTCOpMode() {
             BiLinearShooter.applyShot(shot) // rather than in onUpdate
         }
 
-        if (!intakeRunning && NewTurret.targetReached) {
-            if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
-                || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+        if (gamepad1.left_trigger > 0.5 || (!intakeRunning && NewTurret.targetReached
+            && (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
+                    || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)))) {
                 Spindexer.spinShot()
-            }
+        } else if (!Spindexer.atIntakePos) {
+            Spindexer.stopShot()
+            Spindexer.toIntakePos()
+        }
+
+        val now = System.nanoTime() / 1_000_000.0
+
+        if(firstOnUpdate)
+        {
+            lastTelemetryTime = now
+            lastLoopTime = now
+            firstOnUpdate = false
+            return
         }
 
         val telemetryTime = (now - lastTelemetryTime)
@@ -400,7 +449,7 @@ class Drivetrain : NextFTCOpMode() {
             ) // Only UPDATES when LT is held, the line is always here
 
             telemetry.addData("TurretTargetReached", NewTurret.targetReached)
-            telemetry.addData("SpindexerShotSpeed", Spindexer.spinShotSpeed)
+            telemetry.addData("SpindexerShotSpeedOffset", Spindexer.spinShotSpeedOffset)
 
             telemetry.update()
 
