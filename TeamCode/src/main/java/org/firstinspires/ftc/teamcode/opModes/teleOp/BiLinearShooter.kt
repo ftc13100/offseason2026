@@ -39,7 +39,9 @@ object BiLinearShooter {
         DataPoint(72.0, 45.97, 1740.0, 0.600, 0.55),
         DataPoint(98.03, 24.00, 1880.0, 0.650, 0.70),
         DataPoint(72.0, 21.97, 2100.0, 0.800, 0.70),
-        DataPoint(50.03, 21.97, 2060.0, 0.550, 0.70)
+        DataPoint(50.03, 21.97, 2060.0, 0.550, 0.70),
+        DataPoint(89.0, 8.70, 1980.0, 0.550, 0.65),
+        DataPoint(54.4, 6.1,1980.0, 0.750, 0.60)
     )
 
     private const val IDW_POWER = 2.0  // Higher = more weight to closer points

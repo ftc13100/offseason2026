@@ -30,6 +30,7 @@ import org.firstinspires.ftc.teamcode.opModes.subsystems.Spindexer
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.Shooter
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.ShooterAngle
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants
+import kotlin.math.PI
 import kotlin.math.abs
 
 private  const val TELEMETRY_INTERVAL:Int = 250
@@ -80,32 +81,6 @@ class Drivetrain : NextFTCOpMode() {
                                                    Point(72.0, 29.75),
                                                    Point(101.75, 0.0)) // Scaled +5.75in for robot
 
-    fun makeDriverControlled() {
-        if (PoseStorage.blueAlliance) {
-            driverControlled = MecanumDriverControlled(
-                frontLeftMotor,
-                frontRightMotor,
-                backLeftMotor,
-                backRightMotor,
-                -Gamepads.gamepad1.leftStickY,
-                Gamepads.gamepad1.leftStickX,
-                Gamepads.gamepad1.rightStickX,
-                mode = FieldCentric { (follower.pose.heading + 180.0).rad }
-            )
-        } else {
-            driverControlled = MecanumDriverControlled(
-                frontLeftMotor,
-                frontRightMotor,
-                backLeftMotor,
-                backRightMotor,
-                -Gamepads.gamepad1.leftStickY,
-                Gamepads.gamepad1.leftStickX,
-                Gamepads.gamepad1.rightStickX,
-                mode = FieldCentric { follower.pose.heading.rad }
-            )
-        }
-    }
-
     override fun onInit() {
         if (abs(startPose.x) < 0.1 && abs(startPose.y) < 0.1) {
             follower.setStartingPose(testingPose)
@@ -130,7 +105,19 @@ class Drivetrain : NextFTCOpMode() {
         // NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
 
-        makeDriverControlled()
+        driverControlled = MecanumDriverControlled(
+            frontLeftMotor,
+            frontRightMotor,
+            backLeftMotor,
+            backRightMotor,
+            -Gamepads.gamepad1.leftStickY,
+            Gamepads.gamepad1.leftStickX,
+            Gamepads.gamepad1.rightStickX,
+            mode = FieldCentric {
+                val base = follower.pose.heading
+                if (PoseStorage.blueAlliance) (base + PI).rad else base.rad
+            }
+        )
 
         driverControlled.scalar = 1.0
 
@@ -302,14 +289,12 @@ class Drivetrain : NextFTCOpMode() {
             .whenBecomesTrue {
                 if (testMode) {
                     PoseStorage.blueAlliance = false
-                    makeDriverControlled()
 //                    limelight.pipelineSwitch(2)
                 }
             }
             .whenBecomesFalse {
                 if (testMode) {
                     PoseStorage.blueAlliance = true
-                    makeDriverControlled()
 //                    limelight.pipelineSwitch(1)
                 }
             }
