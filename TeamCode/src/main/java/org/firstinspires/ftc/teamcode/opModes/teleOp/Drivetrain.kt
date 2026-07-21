@@ -122,7 +122,7 @@ class Drivetrain : NextFTCOpMode() {
                     if (PoseStorage.blueAlliance)
                         0.0.rad
                     else
-                        (PI / 2).rad
+                        PI.rad
             }
         )
 
