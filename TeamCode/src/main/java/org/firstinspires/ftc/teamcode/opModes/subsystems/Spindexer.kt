@@ -68,6 +68,7 @@ object Spindexer : Subsystem {
     val absEncP = { analogS.voltage / SPINDEXER_ABS_ENC_V_MAX * SPINDEXER_ENCODER_MAX }
     val digEncV = { spindexer.currentPosition }
     var spinShotSpeed = 0.9
+    var spinShotSpeedOffset = 0.0
 
     fun digEncLimitV() : Double {
         var enc = spindexer.currentPosition % SPINDEXER_ENCODER_MAX
@@ -236,7 +237,7 @@ object Spindexer : Subsystem {
     val spinShot = InstantCommand {
     //    Intake.spinSlowSpeed()() // shouldn't be necessary, also is bad for battery usage when shooting
         state = State.MANUAL
-        spindexer.power = spinShotSpeed
+        spindexer.power = spinShotSpeed + spinShotSpeedOffset
         atIntakePos = false
     }
         .requires(this)
@@ -255,7 +256,7 @@ object Spindexer : Subsystem {
             startTime = System.currentTimeMillis()
             startPos = spindexer.currentPosition
             hasStopped = false
-            spindexer.power = spinShotSpeed
+            spindexer.power = spinShotSpeed + spinShotSpeedOffset
             atIntakePos = false
         }
         .setIsDone {
