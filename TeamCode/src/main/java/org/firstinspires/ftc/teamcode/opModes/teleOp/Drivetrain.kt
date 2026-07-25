@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opModes.teleOp
 import com.pedropathing.geometry.Pose
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotor
+import com.qualcomm.robotcore.util.ElapsedTime
 import dev.nextftc.bindings.BindingManager
 import dev.nextftc.bindings.button
 import dev.nextftc.core.components.BindingsComponent
@@ -21,12 +22,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
+import org.firstinspires.ftc.teamcode.opModes.subsystems.Logger
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
 import org.firstinspires.ftc.teamcode.opModes.subsystems.PoseStorage
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Spindexer
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.Shooter
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.ShooterAngle
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants
+import kotlin.concurrent.timer
 import kotlin.math.abs
 
 private  const val TELEMETRY_INTERVAL:Int = 250
@@ -36,7 +39,7 @@ class Drivetrain : NextFTCOpMode() {
     init {
         addComponents(
             SubsystemComponent(
-                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage
+                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, Logger
             ),
             BindingsComponent,
             BulkReadComponent,
@@ -55,6 +58,7 @@ class Drivetrain : NextFTCOpMode() {
     private lateinit var backLeftMotor: MotorEx
     private lateinit var backRightMotor: MotorEx
 
+
     private lateinit var driverControlled: MecanumDriverControlled
 
     private var lastLoopTime = 0.0
@@ -65,6 +69,8 @@ class Drivetrain : NextFTCOpMode() {
     private var testMode = false
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
+    private val timer = ElapsedTime()
+
 
     override fun onInit() {
 
@@ -89,6 +95,9 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onStartButtonPressed() {
+        timer.reset()
+        Logger.start("TeleOp")
+
 //        NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
 
@@ -291,6 +300,16 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onUpdate() {
+        Logger.log(
+            PoseStorage.blueAlliance,
+            PoseStorage.redAlliance,
+            timer.milliseconds().toLong(),
+            follower.pose.x,
+            follower.pose.y,
+            Math.toDegrees(follower.heading),
+            Shooter.shooter.velocity,
+
+            )
         BindingManager.update()
         driverControlled.update()
         follower.update()
@@ -368,5 +387,7 @@ class Drivetrain : NextFTCOpMode() {
 
     override fun onStop() {
         BindingManager.reset()
+        Logger.close()
+
     }
 }
