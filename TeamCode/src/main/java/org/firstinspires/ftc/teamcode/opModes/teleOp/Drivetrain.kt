@@ -1,25 +1,19 @@
 package org.firstinspires.ftc.teamcode.opModes.teleOp
 
 import com.pedropathing.geometry.Pose
+import com.pedropathing.geometry.BezierLine
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.qualcomm.robotcore.hardware.DcMotor
 import dev.nextftc.bindings.BindingManager
 import dev.nextftc.bindings.button
 import dev.nextftc.core.components.BindingsComponent
 import dev.nextftc.core.components.SubsystemComponent
-import dev.nextftc.core.commands.CommandManager
 import dev.nextftc.core.units.rad
 import dev.nextftc.extensions.pedro.PedroComponent
 import dev.nextftc.extensions.pedro.PedroComponent.Companion.follower
 import dev.nextftc.ftc.Gamepads
 import dev.nextftc.ftc.NextFTCOpMode
 import dev.nextftc.ftc.components.BulkReadComponent
-import dev.nextftc.hardware.driving.FieldCentric
-import dev.nextftc.hardware.driving.MecanumDriverControlled
-import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
-import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
 import org.firstinspires.ftc.teamcode.opModes.subsystems.PoseStorage
@@ -28,6 +22,15 @@ import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.Shooter
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.ShooterAngle
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants
 import kotlin.math.abs
+import com.pedropathing.geometry.BezierCurve
+import dev.nextftc.core.commands.CommandManager
+import dev.nextftc.core.commands.delays.Delay
+import dev.nextftc.core.commands.groups.ParallelGroup
+import dev.nextftc.core.commands.groups.SequentialGroup
+import dev.nextftc.extensions.pedro.FollowPath
+import dev.nextftc.core.commands.Command
+import org.firstinspires.ftc.teamcode.opModes.auto.autoPaths.blueAutoPaths
+import kotlin.time.Duration.Companion.seconds
 
 private  const val TELEMETRY_INTERVAL:Int = 250
 
@@ -36,7 +39,7 @@ class Drivetrain : NextFTCOpMode() {
     init {
         addComponents(
             SubsystemComponent(
-                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage
+                Intake, Spindexer, Shooter, ShooterAngle, NewTurret, PoseStorage, blueAutoPaths
             ),
             BindingsComponent,
             BulkReadComponent,
@@ -49,14 +52,6 @@ class Drivetrain : NextFTCOpMode() {
     private val backLeftName = "backLeft"
     private val backRightName = "backRight"
 
-
-    private lateinit var frontLeftMotor: MotorEx
-    private lateinit var frontRightMotor: MotorEx
-    private lateinit var backLeftMotor: MotorEx
-    private lateinit var backRightMotor: MotorEx
-
-    private lateinit var driverControlled: MecanumDriverControlled
-
     private var lastLoopTime = 0.0
     private var maxLoopTime = 0.0
     private var loopTimeAverage = 0.0
@@ -65,6 +60,9 @@ class Drivetrain : NextFTCOpMode() {
     private var testMode = false
     private val startPose = PoseStorage.poseEnd
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
+    private var macroCommand: Command? = null
+    private var pathCommand: Command? = null
+    private var scalar = 1.0
 
     override fun onInit() {
 
@@ -76,14 +74,6 @@ class Drivetrain : NextFTCOpMode() {
             follower.setStartingPose(startPose)
         }
 
-        frontLeftMotor = MotorEx(frontLeftName)
-        frontRightMotor = MotorEx(frontRightName)
-        backLeftMotor = MotorEx(backLeftName)
-        backRightMotor = MotorEx(backRightName)
-
-        listOf(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor).forEach {
-            it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
-        }
         follower.update()
 //        NewTurret.trackTarget()
     }
@@ -92,17 +82,7 @@ class Drivetrain : NextFTCOpMode() {
 //        NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
 
-        driverControlled = MecanumDriverControlled(
-            frontLeftMotor,
-            frontRightMotor,
-            backLeftMotor,
-            backRightMotor,
-            -Gamepads.gamepad1.leftStickY,
-            Gamepads.gamepad1.leftStickX,
-            Gamepads.gamepad1.rightStickX,
-            mode = FieldCentric { follower.pose.heading.rad }
-        )
-        driverControlled.scalar = 1.0
+        scalar = 1.0
 
         // Reset location and heading
         Gamepads.gamepad1.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad1.rightTrigger.asButton { it > 0.5 }
@@ -116,8 +96,8 @@ class Drivetrain : NextFTCOpMode() {
 
         // slow mode
         button { gamepad1.y }
-            .whenTrue { driverControlled.scalar = 0.5 }
-            .whenFalse { driverControlled.scalar = 1.0 }
+            .whenTrue { scalar = 0.5 }
+            .whenFalse { scalar = 1.0 }
 
         button { gamepad1.dpad_up }
             .whenBecomesTrue {
@@ -288,21 +268,108 @@ class Drivetrain : NextFTCOpMode() {
 //                    limelight.pipelineSwitch(1)
                 }
             }
+
+        // tele-pathing to auto park
+        // add reset position first later to make accurate at the end of a match
+        button { gamepad1.a }
+            .whenBecomesTrue {
+
+                if (PoseStorage.blueAlliance) {
+                    follower.pose = Pose(10.5, 8.5, Math.toRadians(180.0)).mirror()
+                } else {
+                    follower.pose = Pose(10.5, 8.5, Math.toRadians(180.0))
+                }
+
+                val targetPose = if (PoseStorage.blueAlliance) {
+                    Pose(39.0, 32.0, 0.0).mirror()
+                } else {
+                    Pose(39.0, 32.0, 0.0)
+                }
+
+                val path = follower.pathBuilder()
+                    .addPath(BezierLine(follower.pose, targetPose))
+                    .setLinearHeadingInterpolation(follower.pose.heading, targetPose.heading)
+                    .build()
+
+                pathCommand = FollowPath(path,true)
+                CommandManager.scheduleCommand(pathCommand!!)
+            }
+
+        button { gamepad1.x }
+            .whenBecomesTrue {
+                val blue = PoseStorage.blueAlliance
+
+                //poses based on alliance
+                val gatePose = if (blue) blueAutoPaths.gate else blueAutoPaths.gate.mirror()
+                val gateBackPose = if (blue) blueAutoPaths.gateBack else blueAutoPaths.gateBack.mirror()
+                val controlPose = if (blue) blueAutoPaths.PGPcontrol else blueAutoPaths.PGPcontrol.mirror()
+
+                // Path to the gate
+                val toGate = follower.pathBuilder()
+                    .addPath(BezierCurve(follower.pose, controlPose, gatePose))
+                    .setLinearHeadingInterpolation(follower.pose.heading, gatePose.heading, 0.5)
+                    .build()
+
+                // Path back to the shooting position
+                val backToShoot = follower.pathBuilder()
+                    .addPath(BezierCurve(gatePose, controlPose, gateBackPose))
+                    .setTangentHeadingInterpolation()
+                    .setReversed()
+                    .build()
+
+                macroCommand = SequentialGroup(
+                    ParallelGroup(
+                        Spindexer.toIntakePos,
+                        Intake.spinFastAuto,
+                        FollowPath(toGate)
+                    ),
+                    Delay(0.6.seconds),
+                    Intake.spinStopAuto,
+                    FollowPath(backToShoot,false),
+                    Spindexer.spinShot,
+                    Delay(0.5.seconds),
+                    Spindexer.stopShot
+                )
+                CommandManager.scheduleCommand(macroCommand!!)
+            }
     }
 
     override fun onUpdate() {
         BindingManager.update()
-        driverControlled.update()
-        follower.update()
 
-        val now = System.nanoTime() / 1_000_000.0
+        // Check if commands are active
+        val macroActive = macroCommand?.let { CommandManager.isScheduled(it) } ?: false
+        val pathActive = pathCommand?.let { CommandManager.isScheduled(it) } ?: false
 
-        if(firstOnUpdate)
-        {
-            lastTelemetryTime = now
-            lastLoopTime = now
-            firstOnUpdate = false
-            return
+        if (macroActive || pathActive || follower.isBusy) {
+            if (abs(gamepad1.left_stick_y) > 0.1 ||
+                abs(gamepad1.left_stick_x) > 0.1 ||
+                abs(gamepad1.right_stick_x) > 0.1
+            ) {
+                macroCommand?.let { CommandManager.cancelCommand(it); macroCommand = null }
+                pathCommand?.let { CommandManager.cancelCommand(it); pathCommand = null }
+
+                follower.breakFollowing()
+                follower.drivetrain.startTeleopDrive(true)
+            }
+        }
+
+        if (macroActive || pathActive || follower.isBusy) {
+            follower.update()
+        } else {
+            follower.poseTracker.update()
+
+            val y = -gamepad1.left_stick_y.toDouble() * scalar
+            val x = gamepad1.left_stick_x.toDouble() * 1.1 * scalar
+            val rx = gamepad1.right_stick_x.toDouble() * scalar
+
+            val denominator = maxOf(abs(y) + abs(x) + abs(rx), 1.0)
+            val frontLeftPower = (y + x + rx) / denominator
+            val backLeftPower = (y - x + rx) / denominator
+            val frontRightPower = (y - x - rx) / denominator
+            val backRightPower = (y + x - rx) / denominator
+
+            follower.drivetrain.runDrive(doubleArrayOf(frontLeftPower, backLeftPower, frontRightPower, backRightPower))
         }
 
         if(NewTurret.goalTrackingActive) {
@@ -315,9 +382,20 @@ class Drivetrain : NextFTCOpMode() {
             BiLinearShooter.applyShot(shot) // rather than in onUpdate
         }
 
+        val now = System.nanoTime() / 1_000_000.0
+
+        if(firstOnUpdate)
+        {
+            lastTelemetryTime = now
+            lastLoopTime = now
+            firstOnUpdate = false
+            return
+        }
+
         val telemetryTime = (now - lastTelemetryTime)
         val loopTime = (now - lastLoopTime)
         if(loopTime > maxLoopTime) maxLoopTime = loopTime
+
         if((loopTimeAverage < 0.5 * loopTime) || (loopTimeAverage > 1.5 * loopTime))
             loopTimeAverage = loopTime
         else

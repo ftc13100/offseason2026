@@ -105,13 +105,13 @@ class b18: NextFTCOpMode() {
 
 
     override fun onInit() {
-        PedroComponent.Companion.follower.setMaxPower(1.0)
+        PedroComponent.follower.setMaxPower(1.0)
         Spindexer.toIntakePos
 
     }
 
     override fun onStartButtonPressed() {
-        PedroComponent.Companion.follower.setStartingPose(blueAutoPaths.start)
+        PedroComponent.follower.setStartingPose(blueAutoPaths.start)
         blueAutoPaths.buildPaths()
         PoseStorage.blueAlliance = true
         PoseStorage.redAlliance = false
@@ -120,7 +120,7 @@ class b18: NextFTCOpMode() {
     }
 
     override fun onStop() {
-        PoseStorage.poseEnd = PedroComponent.Companion.follower.pose
+        PoseStorage.poseEnd = PedroComponent.follower.pose
     }
 
     override fun onUpdate() {

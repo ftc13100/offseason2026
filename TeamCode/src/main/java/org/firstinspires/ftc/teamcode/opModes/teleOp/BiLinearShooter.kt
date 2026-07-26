@@ -23,11 +23,11 @@ object BiLinearShooter {
 
     private val shotData = listOf(
         DataPoint(24.0, 117.97, 1960.0, 0.800),
-        DataPoint(48.0, 117.97, 1780.0, 0.550),
-        DataPoint(96.0, 117.97, 1460.0, 0.300),
-        DataPoint(72.0, 117.97, 1640.0, 0.600),
-        DataPoint(72.0, 93.97, 1640.0, 0.600),
-        DataPoint(24.0, 93.97, 1960.0, 0.750),
+        DataPoint(48.0, 117.97, 1720.0, 0.650),
+        DataPoint(96.0, 117.97, 1320.0, 0.300),
+        DataPoint(72.0, 117.97, 1560.0, 0.600),
+        DataPoint(72.0, 93.97, 1600.0, 0.550),
+        DataPoint(24.0, 93.97, 1980.0, 0.750),
         DataPoint(96.0, 93.97, 1400.0, 0.350),
         DataPoint(48.0, 93.97, 1840.0, 0.750),
         DataPoint(120.0, 93.97, 1600.0, 0.700),
@@ -39,6 +39,7 @@ object BiLinearShooter {
         DataPoint(72.0, 21.97, 2100.0, 0.800),
         DataPoint(50.03, 21.97, 2060.0, 0.550)
     )
+
 
     private const val IDW_POWER = 2.0  // Higher = more weight to closer points
     private const val EPSILON = 1e-6   // Threshold for exact match
