@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.opModes.teleOp
 import com.pedropathing.geometry.Pose
 import com.pedropathing.geometry.BezierLine
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.qualcomm.robotcore.hardware.DcMotor
 import dev.nextftc.bindings.BindingManager
 import dev.nextftc.bindings.button
 import dev.nextftc.core.components.BindingsComponent
@@ -14,9 +13,6 @@ import dev.nextftc.extensions.pedro.PedroComponent.Companion.follower
 import dev.nextftc.ftc.Gamepads
 import dev.nextftc.ftc.NextFTCOpMode
 import dev.nextftc.ftc.components.BulkReadComponent
-import dev.nextftc.hardware.driving.FieldCentric
-import dev.nextftc.hardware.driving.MecanumDriverControlled
-import dev.nextftc.hardware.impl.MotorEx
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Intake.intakeRunning
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
@@ -56,14 +52,6 @@ class Drivetrain : NextFTCOpMode() {
     private val backLeftName = "backLeft"
     private val backRightName = "backRight"
 
-
-    private lateinit var frontLeftMotor: MotorEx
-    private lateinit var frontRightMotor: MotorEx
-    private lateinit var backLeftMotor: MotorEx
-    private lateinit var backRightMotor: MotorEx
-
-    private lateinit var driverControlled: MecanumDriverControlled
-
     private var lastLoopTime = 0.0
     private var maxLoopTime = 0.0
     private var loopTimeAverage = 0.0
@@ -74,6 +62,7 @@ class Drivetrain : NextFTCOpMode() {
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
     private var macroCommand: Command? = null
     private var pathCommand: Command? = null
+    private var scalar = 1.0
 
     override fun onInit() {
 
@@ -85,14 +74,6 @@ class Drivetrain : NextFTCOpMode() {
             follower.setStartingPose(startPose)
         }
 
-        frontLeftMotor = MotorEx(frontLeftName)
-        frontRightMotor = MotorEx(frontRightName)
-        backLeftMotor = MotorEx(backLeftName)
-        backRightMotor = MotorEx(backRightName)
-
-        listOf(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor).forEach {
-            it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
-        }
         follower.update()
 //        NewTurret.trackTarget()
     }
@@ -101,17 +82,7 @@ class Drivetrain : NextFTCOpMode() {
 //        NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
 
-        driverControlled = MecanumDriverControlled(
-            frontLeftMotor,
-            frontRightMotor,
-            backLeftMotor,
-            backRightMotor,
-            -Gamepads.gamepad1.leftStickY,
-            Gamepads.gamepad1.leftStickX,
-            Gamepads.gamepad1.rightStickX,
-            //mode = FieldCentric { follower.pose.heading.rad }
-        )
-        driverControlled.scalar = 1.0
+        scalar = 1.0
 
         // Reset location and heading
         Gamepads.gamepad1.leftTrigger.asButton { it > 0.5 } and Gamepads.gamepad1.rightTrigger.asButton { it > 0.5 }
@@ -125,8 +96,8 @@ class Drivetrain : NextFTCOpMode() {
 
         // slow mode
         button { gamepad1.y }
-            .whenTrue { driverControlled.scalar = 0.5 }
-            .whenFalse { driverControlled.scalar = 1.0 }
+            .whenTrue { scalar = 0.5 }
+            .whenFalse { scalar = 1.0 }
 
         button { gamepad1.dpad_up }
             .whenBecomesTrue {
@@ -379,15 +350,27 @@ class Drivetrain : NextFTCOpMode() {
                 pathCommand?.let { CommandManager.cancelCommand(it); pathCommand = null }
 
                 follower.breakFollowing()
-                // Pedro uses coast, motors need to go back to brake mode for Tele
-                listOf(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor).forEach {
-                    it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
-                }
+                follower.drivetrain.startTeleopDrive(true)
             }
         }
 
-        follower.update()
-        driverControlled.update()
+        if (macroActive || pathActive || follower.isBusy) {
+            follower.update()
+        } else {
+            follower.poseTracker.update()
+
+            val y = -gamepad1.left_stick_y.toDouble() * scalar
+            val x = gamepad1.left_stick_x.toDouble() * 1.1 * scalar
+            val rx = gamepad1.right_stick_x.toDouble() * scalar
+
+            val denominator = maxOf(abs(y) + abs(x) + abs(rx), 1.0)
+            val frontLeftPower = (y + x + rx) / denominator
+            val backLeftPower = (y - x + rx) / denominator
+            val frontRightPower = (y - x - rx) / denominator
+            val backRightPower = (y + x - rx) / denominator
+
+            follower.drivetrain.runDrive(doubleArrayOf(frontLeftPower, backLeftPower, frontRightPower, backRightPower))
+        }
 
         if(NewTurret.goalTrackingActive) {
             val shot = if (!PoseStorage.blueAlliance) BiLinearShooter.getShot(
