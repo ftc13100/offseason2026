@@ -37,7 +37,5 @@ dependencies {
     implementation 'dev.nextftc:bindings:1.0.1'
     implementation 'dev.nextftc.extensions:pedro:1.0.0'
 
-    implementation 'androidx.core:core-ktx:1.15.0'
     implementation 'com.acmerobotics.dashboard:dashboard:0.5.0'
-    implementation 'androidx.compose.remote:remote-creation-compose:1.0.0-alpha15'
 }

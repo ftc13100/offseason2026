@@ -385,7 +385,10 @@ object Spindexer : Subsystem {
         if (cached1 != SpindexerColor.EMPTY) count++
         if (cached2 != SpindexerColor.EMPTY) count++
         return count
+
     }
+    val result: Int
+        get() = pixelCount()
 
     override fun initialize() {
         prism = hardwareMap.get(GoBildaPrismDriver::class.java, "led")

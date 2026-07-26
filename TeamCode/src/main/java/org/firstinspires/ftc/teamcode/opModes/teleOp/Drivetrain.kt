@@ -58,6 +58,8 @@ class Drivetrain : NextFTCOpMode() {
     private lateinit var backLeftMotor: MotorEx
     private lateinit var backRightMotor: MotorEx
 
+    private lateinit var alliance: String
+
 
     private lateinit var driverControlled: MecanumDriverControlled
 
@@ -95,6 +97,14 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onStartButtonPressed() {
+
+        if (PoseStorage.blueAlliance == true){
+             alliance = "blue"
+        } else if (PoseStorage.redAlliance == true){
+            alliance = "red"
+        } else {
+            alliance = "null"
+        }
         timer.reset()
         Logger.start("TeleOp")
 
@@ -301,15 +311,36 @@ class Drivetrain : NextFTCOpMode() {
 
     override fun onUpdate() {
         Logger.log(
-            PoseStorage.blueAlliance,
-            PoseStorage.redAlliance,
             timer.milliseconds().toLong(),
+            alliance,
             follower.pose.x,
             follower.pose.y,
             Math.toDegrees(follower.heading),
+            follower.angularVelocity,
+            NewTurret.targetAngleField,
+            NewTurret.targetAngleStatic,
+            NewTurret.targetAngleAV,
+            NewTurret.turretEOffset,
+            NewTurret.targetAngleRobotRef,
+            NewTurret.targetServoPosition,
+           // DIGITAL ENCODER DONT HAVE
+            Shooter.target,
+            Shooter.manualOffset,
             Shooter.shooter.velocity,
-
+            ShooterAngle.servo.position,
+            Intake.intake.power,
+            Intake.intake.motor.getCurrent(CurrentUnit.MILLIAMPS),
+            Spindexer.spindexer.power,
+            Spindexer.spindexer.currentPosition,
+            Spindexer.spindexer.velocity,
+            Spindexer.result,
+            Spindexer.targetPosition
             )
+
+
+        Spindexer.pixelCount()
+
+
         BindingManager.update()
         driverControlled.update()
         follower.update()
