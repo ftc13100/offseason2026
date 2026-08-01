@@ -1,21 +1,25 @@
 package org.firstinspires.ftc.teamcode.opModes.subsystems
 
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor
+import android.os.Build
+import androidx.annotation.RequiresApi
+
 import dev.nextftc.core.subsystems.Subsystem
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 
+
 object Logger : Subsystem {
 
     private var writer: BufferedWriter? = null
+
 
     fun start(fileType: String) {
         val file = File("/sdcard/FIRST/$fileType.csv")
 
         writer = BufferedWriter(FileWriter(file))
         writer?.apply {
-            write("Blue Alliance, Red Alliance, Time,PositionX," +
+            write("Time, Alliance,PositionX," +
                     "PositionY, Heading, AngularVelocity, taFieldRef, taStatic, taAV, taOffset, taRobotRef," +
                     " taServoPos, shooterTarget, shooterAdjust, " +
                     "shooterVelocity, shooterAngle, intakePower, intakeCurrent, spindexerPower," +
@@ -48,9 +52,10 @@ object Logger : Subsystem {
         spindexerVelocity: Double,
         spindexerResult: Int,
         spindexerTarget: Double
-        ) {
+    ) {
+
         writer?.apply {
-            write("%b,%b,%.0f,%.1f,%.1f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f".format(
+            write("%.0f, %s, %.1f,%.1f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,pid,%s".format(
                 time.toDouble(),
                 alliance,
                 positionX,
@@ -74,7 +79,7 @@ object Logger : Subsystem {
                 spindexerVelocity,
                 spindexerResult,
                 spindexerTarget
-                ))
+            ))
             newLine()
         }
     }

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.teleOp
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.pedropathing.geometry.Pose
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 import com.qualcomm.robotcore.hardware.DcMotor
@@ -309,6 +311,7 @@ class Drivetrain : NextFTCOpMode() {
             }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onUpdate() {
         Logger.log(
             timer.milliseconds().toLong(),
