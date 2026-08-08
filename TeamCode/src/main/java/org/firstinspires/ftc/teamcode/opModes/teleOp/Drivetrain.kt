@@ -113,10 +113,10 @@ class Drivetrain : NextFTCOpMode() {
             -Gamepads.gamepad1.leftStickY,
             Gamepads.gamepad1.leftStickX,
             Gamepads.gamepad1.rightStickX,
-            mode = FieldCentric {
-                val base = follower.pose.heading
-                if (PoseStorage.blueAlliance) (base + PI).rad else base.rad
-            }
+            //mode = FieldCentric {
+            //    val base = follower.pose.heading
+            //    if (PoseStorage.blueAlliance) (base + PI).rad else base.rad
+            //}
         )
 
         driverControlled.scalar = 1.0
@@ -228,12 +228,10 @@ class Drivetrain : NextFTCOpMode() {
 
         //Intake artifact
         button { gamepad1.left_bumper }
-            //          .toggleOnBecomesTrue()
+            .toggleOnBecomesTrue()
             .whenBecomesTrue {
                 Spindexer.stopShot()
-            }
-            .whenTrue {
-                Intake.spinHeld()
+                Intake.spinFast()
             }
             .whenBecomesFalse {
                 Intake.spinStop()
