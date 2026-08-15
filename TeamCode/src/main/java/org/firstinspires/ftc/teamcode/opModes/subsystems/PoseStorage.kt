@@ -6,6 +6,8 @@ import dev.nextftc.core.subsystems.Subsystem
 object PoseStorage : Subsystem {
     var poseEnd = Pose()
     var blueAlliance = false
+
+
     var redAlliance = false
     var motif = 0
 
