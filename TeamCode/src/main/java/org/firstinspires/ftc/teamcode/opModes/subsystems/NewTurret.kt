@@ -33,7 +33,7 @@ object NewTurret : Subsystem {
     var targetAngleStatic: Double = 0.0
     var targetAngleAV: Double = 0.0
     val TURRET_MAX_TOLERANCE_DEGREES = 5 // Uses degrees TODO: Tune
-    val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 5 // Uses degrees TODO: Tune
+    val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 3
     val TURRET_DIGITAL_TPD = 10/3
 
     var turretOffset = 0.0

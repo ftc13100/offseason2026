@@ -73,14 +73,6 @@ class Drivetrain : NextFTCOpMode() {
     private var macroCommand: Command? = null
     private var pathCommand: Command? = null
 
-    private val scaledCloseShootingZone = Triangle(Point(0.0, 138.25),
-                                                   Point(144.0, 138.25),
-                                                   Point(72.0, 66.25),) // Scaled +5.75in for robot
-
-    private val scaledFarShootingZone = Triangle(Point(42.25, 0.0),
-                                                   Point(72.0, 29.75),
-                                                   Point(101.75, 0.0)) // Scaled +5.75in for robot
-
     override fun onInit() {
         if (abs(startPose.x) < 0.1 && abs(startPose.y) < 0.1) {
             follower.setStartingPose(testingPose)
@@ -351,18 +343,15 @@ class Drivetrain : NextFTCOpMode() {
         driverControlled.update()
 
         if(NewTurret.goalTrackingActive) {
-            val shot = if (!PoseStorage.blueAlliance) BiLinearShooter.getShot(
-                NewTurret.turretX,
-                NewTurret.turretY
-            )
-            else BiLinearShooter.getShot(141.5 - NewTurret.turretX, NewTurret.turretY)
+            val shot = if (!PoseStorage.blueAlliance) BiLinearShooter.getShot(NewTurret.turretX, NewTurret.turretY, follower.getVelocity())
+            else BiLinearShooter.getShot(141.5 - NewTurret.turretX, NewTurret.turretY, follower.getVelocity())
             //BiLinearShooter.getShot(NewTurret.newX, NewTurret.newY) // have this and line under in a button and onStart
             BiLinearShooter.applyShot(shot) // rather than in onUpdate
         }
 
         if (gamepad1.left_trigger > 0.5 || (!intakeRunning && NewTurret.targetReached
-            && (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)
-                    || ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)))) {
+            && (ZoneDetection.poseInTriangle(follower.pose, ZoneDetection.scaledCloseShootingZone)
+                    || ZoneDetection.poseInTriangle(follower.pose, ZoneDetection.scaledFarShootingZone)))) {
                 Spindexer.spinShot()
         } else if (!Spindexer.atIntakePos) {
             Spindexer.stopShot()

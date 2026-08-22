@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.teleOp
 
 import com.pedropathing.geometry.Pose
+import com.pedropathing.math.Vector
 import dev.nextftc.core.commands.CommandManager
 import org.firstinspires.ftc.teamcode.opModes.subsystems.Spindexer
 import org.firstinspires.ftc.teamcode.opModes.subsystems.shooter.Shooter
@@ -11,6 +12,9 @@ import kotlin.math.sqrt
 object BiLinearShooter {
     val goalClose = Pose(4.0, 139.5)
     val goalFar = Pose(3.0, 139.0)
+
+    var useZoneProjection = true
+    val zoneProjectionLookahead = 1 // Uses seconds
 
 
     data class ShotParameters(val velocity: Double, val angle: Double, val spinspeed: Double)
@@ -51,10 +55,21 @@ object BiLinearShooter {
      * Get shot parameters using Inverse Distance Weighting (IDW) interpolation.
      * Handles scattered data points without needing a complete grid.
      */
-    fun getShot(x: Double, y: Double): ShotParameters {
+    fun getShot(x: Double, y: Double, velocity: Vector): ShotParameters {
+        var finalX = x
+        var finalY = y
+
+        if (useZoneProjection) {
+            val velocityOffset: Vector = velocity.copy()
+            velocityOffset.setMagnitude(velocityOffset.getMagnitude() * zoneProjectionLookahead)
+
+            val finalY = y + velocityOffset.getYComponent()
+            val finalX = x + velocityOffset.getXComponent()
+        }
+
         val distances = shotData.map { point ->
-            val dx = x - point.x
-            val dy = y - point.y
+            val dx = finalX - point.x
+            val dy = finalY - point.y
             sqrt(dx * dx + dy * dy)
         }
 
