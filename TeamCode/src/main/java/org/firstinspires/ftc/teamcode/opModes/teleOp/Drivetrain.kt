@@ -413,9 +413,9 @@ class Drivetrain : NextFTCOpMode() {
 
             telemetry.addData(
                 "In Zone", "%s",
-                if (ZoneDetection.poseInTriangle(follower.pose, scaledCloseShootingZone)) {
+                if (ZoneDetection.poseInTriangle(follower.pose, ZoneDetection.scaledCloseShootingZone)) {
                     "Close"
-                } else if (ZoneDetection.poseInTriangle(follower.pose, scaledFarShootingZone)) {
+                } else if (ZoneDetection.poseInTriangle(follower.pose, ZoneDetection.scaledFarShootingZone)) {
                     "Far"
                 } else {
                     "None"
