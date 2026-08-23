@@ -34,7 +34,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants
 import kotlin.concurrent.timer
 import kotlin.math.abs
 
-private  const val TELEMETRY_INTERVAL:Int = 250
+private const val TELEMETRY_INTERVAL: Int = 250
 
 @TeleOp(name = "Drivetrain")
 class Drivetrain : NextFTCOpMode() {
@@ -54,14 +54,12 @@ class Drivetrain : NextFTCOpMode() {
     private val backLeftName = "backLeft"
     private val backRightName = "backRight"
 
-
     private lateinit var frontLeftMotor: MotorEx
     private lateinit var frontRightMotor: MotorEx
     private lateinit var backLeftMotor: MotorEx
     private lateinit var backRightMotor: MotorEx
 
     private lateinit var alliance: String
-
 
     private lateinit var driverControlled: MecanumDriverControlled
 
@@ -75,9 +73,7 @@ class Drivetrain : NextFTCOpMode() {
     private val testingPose = Pose(72.0, 72.0, Math.toRadians(90.0))
     private val timer = ElapsedTime()
 
-
     override fun onInit() {
-
         if (abs(startPose.x) < 0.1 && abs(startPose.y) < 0.1) {
             follower.setStartingPose(testingPose)
             PoseStorage.blueAlliance = false
@@ -95,22 +91,25 @@ class Drivetrain : NextFTCOpMode() {
             it.motor.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.BRAKE
         }
         follower.update()
-//        NewTurret.trackTarget()
     }
 
     override fun onStartButtonPressed() {
-
-        if (PoseStorage.blueAlliance == true){
-             alliance = "blue"
-        } else if (PoseStorage.redAlliance == true){
+        if (PoseStorage.blueAlliance == true) {
+            alliance = "blue"
+        } else if (PoseStorage.redAlliance == true) {
             alliance = "red"
         } else {
             alliance = "null"
         }
         timer.reset()
-        Logger.start("TeleOp")
 
-//        NewTurret.backRightMotor.atPosition(6000.0)
+        // Define precisely which headers you want to track for this TeleOp run
+        val headers = listOf(
+            "Time", "Alliance", "PositionX", "PositionY", "Heading",
+            "ShooterVelocity", "ShooterTarget", "IntakePower", "SpindexerTarget"
+        )
+        Logger.start("TeleOp", headers)
+
         NewTurret.trackTarget()
 
         driverControlled = MecanumDriverControlled(
@@ -158,7 +157,7 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad2.dpad_up }
             .whenBecomesTrue {
-                if(NewTurret.goalTrackingActive)
+                if (NewTurret.goalTrackingActive)
                     Shooter.manualOffset += 50.0
                 else
                     Shooter.adjustSpeed(50.0)
@@ -166,63 +165,30 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad2.dpad_down }
             .whenBecomesTrue {
-                if(NewTurret.goalTrackingActive)
+                if (NewTurret.goalTrackingActive)
                     Shooter.manualOffset -= 50.0
                 else
-                    Shooter.adjustSpeed( -50.0)
+                    Shooter.adjustSpeed(-50.0)
             }
 
         button { gamepad1.dpad_right }
             .whenBecomesTrue {
-                if(NewTurret.goalTrackingActive)
+                if (NewTurret.goalTrackingActive)
                     ShooterAngle.manualOffset += 0.05
                 else
-                    ShooterAngle.adjustAngle( 0.05)
+                    ShooterAngle.adjustAngle(0.05)
             }
 
         button { gamepad1.dpad_left }
             .whenBecomesTrue {
-                if(NewTurret.goalTrackingActive)
+                if (NewTurret.goalTrackingActive)
                     ShooterAngle.manualOffset -= 0.05
                 else
-                    ShooterAngle.adjustAngle( -0.05)
+                    ShooterAngle.adjustAngle(-0.05)
             }
 
-//        button { gamepad2.right_bumper}
-//            .whenBecomesTrue {
-//                if(NewTurret.goalTrackingActive)
-//                    NewTurret.manualOffsetAngle += -10.0
-//                else
-//                    NewTurret.adjustAngle(-10.0)
-//            }
-//
-//        button { gamepad2.left_bumper }
-//            .whenBecomesTrue {
-//                if(NewTurret.goalTrackingActive)
-//                    NewTurret.manualOffsetAngle += 10.0
-//                else
-//                    NewTurret.adjustAngle(10.0)
-//            }
-//
-//        button { gamepad2.right_trigger > 0.5 }
-//            .whenTrue {
-//                if(NewTurret.goalTrackingActive)
-//                    NewTurret.manualOffsetAngle -= 0.1
-//                else
-//                    NewTurret.adjustAngle(-0.1)
-//            }
-//
-//        button { gamepad2.left_trigger > 0.5 }
-//            .whenTrue {
-//                if (NewTurret.goalTrackingActive)
-//                    NewTurret.manualOffsetAngle += 0.1
-//                else
-//                    NewTurret.adjustAngle(0.1)
-//            }
-
-        //Intake artifact
+        // Intake artifact
         button { gamepad1.left_bumper }
-  //          .toggleOnBecomesTrue()
             .whenBecomesTrue {
                 Spindexer.toIntakePos()
             }
@@ -233,7 +199,7 @@ class Drivetrain : NextFTCOpMode() {
                 Intake.spinStop()
             }
 
-                //Outtake artifact
+        // Outtake artifact
         button { gamepad1.right_bumper }
             .whenBecomesTrue {
                 Intake.spinReverse()
@@ -251,15 +217,6 @@ class Drivetrain : NextFTCOpMode() {
                 Intake.spinStop()
             }
 
-//        button { gamepad1.right_trigger > 0.4 }
-//            .whenTrue {
-//                Spindexer.spinShotIndex()
-//            }
-//            .whenBecomesFalse {
-//                Spindexer.stopShot()
-//                Intake.spinStop()
-//            }
-
         button { gamepad2.a }
             .whenTrue {
                 Spindexer.spinShotIndex()
@@ -269,24 +226,24 @@ class Drivetrain : NextFTCOpMode() {
                 Intake.spinStop()
             }
 
-        button { gamepad2.x}
+        button { gamepad2.x }
             .whenBecomesTrue {
                 Spindexer.autoIndex(0)()
             }
 
-        button { gamepad2.y}
+        button { gamepad2.y }
             .whenBecomesTrue {
                 Spindexer.autoIndex(1)()
             }
 
-        button { gamepad2.b}
+        button { gamepad2.b }
             .whenBecomesTrue {
                 Spindexer.autoIndex(2)()
             }
 
-        button {gamepad2.left_stick_button}
+        button { gamepad2.left_stick_button }
             .whenBecomesTrue {
-                if(NewTurret.goalTrackingActive)
+                if (NewTurret.goalTrackingActive)
                     NewTurret.stopTracking()
                 else {
                     NewTurret.trackTarget()
@@ -294,55 +251,38 @@ class Drivetrain : NextFTCOpMode() {
                     ShooterAngle.manualOffset = 0.0
                 }
             }
-        // Switch alliance (works only in test mode where Teleop was started without Auto)
+
+        // Switch alliance
         button { gamepad2.right_stick_button }
             .toggleOnBecomesTrue()
             .whenBecomesTrue {
                 if (testMode) {
                     PoseStorage.blueAlliance = false
-//                    limelight.pipelineSwitch(2)
                 }
             }
             .whenBecomesFalse {
                 if (testMode) {
                     PoseStorage.blueAlliance = true
-//                    limelight.pipelineSwitch(1)
                 }
             }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onUpdate() {
         Logger.log(
-            timer.milliseconds().toLong(),
-            alliance,
-            follower.pose.x,
-            follower.pose.y,
-            Math.toDegrees(follower.heading),
-            follower.angularVelocity,
-            NewTurret.targetAngleField,
-            NewTurret.targetAngleStatic,
-            NewTurret.targetAngleAV,
-            NewTurret.turretEOffset,
-            NewTurret.targetAngleRobotRef,
-            NewTurret.targetServoPosition,
-           // DIGITAL ENCODER DONT HAVE
-            Shooter.target,
-            Shooter.manualOffset,
-            Shooter.shooter.velocity,
-            ShooterAngle.servo.position,
-            Intake.intake.power,
-            Intake.intake.motor.getCurrent(CurrentUnit.MILLIAMPS),
-            Spindexer.spindexer.power,
-            Spindexer.spindexer.currentPosition,
-            Spindexer.spindexer.velocity,
-            Spindexer.result,
-            Spindexer.targetPosition
+            mapOf(
+                "Time" to String.format("%.0f", timer.milliseconds()),
+                "Alliance" to alliance,
+                "PositionX" to String.format("%.1f", follower.pose.x),
+                "PositionY" to String.format("%.1f", follower.pose.y),
+                "Heading" to String.format("%.0f", Math.toDegrees(follower.heading)),
+                "ShooterVelocity" to String.format("%.0f", Shooter.shooter.velocity),
+                "ShooterTarget" to String.format("%.0f", Shooter.target),
+                "IntakePower" to String.format("%.0f", Intake.intake.power),
+                "SpindexerTarget" to String.format("%.0f", Spindexer.targetPosition)
             )
-
+        )
 
         Spindexer.pixelCount()
-
 
         BindingManager.update()
         driverControlled.update()
@@ -350,68 +290,46 @@ class Drivetrain : NextFTCOpMode() {
 
         val now = System.nanoTime() / 1_000_000.0
 
-        if(firstOnUpdate)
-        {
+        if (firstOnUpdate) {
             lastTelemetryTime = now
             lastLoopTime = now
             firstOnUpdate = false
             return
         }
 
-        if(NewTurret.goalTrackingActive) {
+        if (NewTurret.goalTrackingActive) {
             val shot = if (!PoseStorage.blueAlliance) BiLinearShooter.getShot(
                 NewTurret.turretX,
                 NewTurret.turretY
             )
             else BiLinearShooter.getShot(141.5 - NewTurret.turretX, NewTurret.turretY)
-            //BiLinearShooter.getShot(NewTurret.newX, NewTurret.newY) // have this and line under in a button and onStart
-            BiLinearShooter.applyShot(shot) // rather than in onUpdate
+            BiLinearShooter.applyShot(shot)
         }
 
         val telemetryTime = (now - lastTelemetryTime)
         val loopTime = (now - lastLoopTime)
-        if(loopTime > maxLoopTime) maxLoopTime = loopTime
-        if((loopTimeAverage < 0.5 * loopTime) || (loopTimeAverage > 1.5 * loopTime))
+        if (loopTime > maxLoopTime) maxLoopTime = loopTime
+        if ((loopTimeAverage < 0.5 * loopTime) || (loopTimeAverage > 1.5 * loopTime))
             loopTimeAverage = loopTime
         else
             loopTimeAverage = loopTimeAverage * 0.99 + loopTime * 0.01
 
-        if(telemetryTime > TELEMETRY_INTERVAL )
-        {
+        if (telemetryTime > TELEMETRY_INTERVAL) {
             telemetry.addData("LT", "Av: %.2f, Max: %.2f", loopTimeAverage, maxLoopTime)
-
             telemetry.addData("Pos", "(%.1f, %.1f, %.1f), Tur: (%.1f, %.1f)", follower.pose.x, follower.pose.y, Math.toDegrees(follower.heading), NewTurret.turretX, NewTurret.turretY)
-
-
-            telemetry.addData("Shooter", "V: %.0f, T: %.0f, Offset: %.0f",Shooter.shooter.velocity, Shooter.target, Shooter.manualOffset)
-            telemetry.addData("Turret", "F: %.1f, R: %.1f, S: %.3f",NewTurret.targetAngleField, NewTurret.targetAngleRobotRef, NewTurret.targetServoPosition)
-        //    telemetry.addData("TurretEnc", "E: %.0f, A: %.1f, Err: %.1f",NewTurret.encoderDPosition(), NewTurret.encoderDAngle())
-//            telemetry.addData("TurretAng", "Static: %.1f, AngV: %.1f, Err: %.1f", NewTurret.targetAngleStatic, NewTurret.targetAngleAV, NewTurret.encoderDAngle() - NewTurret.targetAngleRobotRef)
+            telemetry.addData("Shooter", "V: %.0f, T: %.0f, Offset: %.0f", Shooter.shooter.velocity, Shooter.target, Shooter.manualOffset)
+            telemetry.addData("Turret", "F: %.1f, R: %.1f, S: %.3f", NewTurret.targetAngleField, NewTurret.targetAngleRobotRef, NewTurret.targetServoPosition)
             telemetry.addData("Hood", "Pos: %.2f, Offset: %.2f", ShooterAngle.servo.position, ShooterAngle.manualOffset)
-
-//            telemetry.addData("Spindexer", "D: %.0f (%.0f), A: %.0f (%.3f)", Spindexer.digEncLimitV(), Spindexer.digEncV(), Spindexer.absEncP(), Spindexer.absEncV())
-            telemetry.addData("SpindexerTarget", "%.0f, Error: %.0f, Done: %b", Spindexer.targetPosition, Spindexer.targetPosition - Spindexer.digEncV(),
-                Spindexer.targetReached)
-//            telemetry.addData("SpindexerConst", "I1: %.0f, I2: %.0f, I3: %.0f", Spindexer.intakePos1, Spindexer.intakePos2, Spindexer.intakePos3)
-
+            telemetry.addData("SpindexerTarget", "%.0f, Error: %.0f, Done: %b", Spindexer.targetPosition, Spindexer.targetPosition - Spindexer.digEncV(), Spindexer.targetReached)
             telemetry.addData(
-                "Intake", "%s",// (Power: %+1.1f, Current: %3.2f mA)",
+                "Intake", "%s",
                 if (intakeRunning) {
                     "Running"
                 } else {
                     "Stopped"
-                }//, intake.power, intake.motor.getCurrent(CurrentUnit.MILLIAMPS)
+                }
             )
-
-//            telemetry.addData("analog", "%.0f", (Spindexer.analogS.voltage/3.225 * 4000.0))
             telemetry.addData("Full?", Spindexer.isFull)
-//            telemetry.addData("S0 ", Spindexer.detectColorRGB(Spindexer.color0))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color0.normalizedColors.alpha)
-//            telemetry.addData("S1 ", Spindexer.detectColorRGB(Spindexer.color1))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color1.normalizedColors.alpha)
-//            telemetry.addData("S2 ", Spindexer.detectColorRGB(Spindexer.color2))
-//            telemetry.addData("Alpha", "%.3f", Spindexer.color2.normalizedColors.alpha)
-
             telemetry.update()
 
             lastTelemetryTime = now
@@ -422,6 +340,5 @@ class Drivetrain : NextFTCOpMode() {
     override fun onStop() {
         BindingManager.reset()
         Logger.close()
-
     }
 }
