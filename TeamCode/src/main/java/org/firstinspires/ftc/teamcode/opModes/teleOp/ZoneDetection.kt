@@ -5,7 +5,7 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 object ZoneDetection {
-    private val radius = 6.0
+    private val radius = 10.0
 
     private val closeShootingZone = Triangle(
         Point(0.0, 144.0),

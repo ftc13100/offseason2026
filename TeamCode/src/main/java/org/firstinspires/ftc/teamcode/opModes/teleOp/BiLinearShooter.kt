@@ -12,9 +12,11 @@ import kotlin.math.sqrt
 object BiLinearShooter {
     val goalClose = Pose(4.0, 139.5)
     val goalFar = Pose(3.0, 139.0)
+    var projectedX = 0.0
+    var projectedY = 0.0
 
     var useZoneProjection = true
-    val zoneProjectionLookahead = 1 // Uses seconds
+    var zoneProjectionLookahead = 0.4
 
 
     data class ShotParameters(val velocity: Double, val angle: Double, val spinspeed: Double)
@@ -56,20 +58,20 @@ object BiLinearShooter {
      * Handles scattered data points without needing a complete grid.
      */
     fun getShot(x: Double, y: Double, velocity: Vector): ShotParameters {
-        var finalX = x
-        var finalY = y
+        projectedX = x
+        projectedY = y
 
-        if (useZoneProjection) {
-            val velocityOffset: Vector = velocity.copy()
-            velocityOffset.setMagnitude(velocityOffset.getMagnitude() * zoneProjectionLookahead)
 
-            val finalY = y + velocityOffset.getYComponent()
-            val finalX = x + velocityOffset.getXComponent()
-        }
+        val velocityOffset: Vector = velocity.copy()
+        velocityOffset.setMagnitude(velocityOffset.getMagnitude() * zoneProjectionLookahead)
+
+        projectedY = y + velocityOffset.getYComponent()
+        projectedX = x + velocityOffset.getXComponent()
+
 
         val distances = shotData.map { point ->
-            val dx = finalX - point.x
-            val dy = finalY - point.y
+            val dx = projectedX - point.x
+            val dy = projectedY - point.y
             sqrt(dx * dx + dy * dy)
         }
 

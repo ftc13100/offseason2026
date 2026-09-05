@@ -49,6 +49,8 @@ class Drivetrain : NextFTCOpMode() {
         )
     }
 
+    private lateinit var logger: LogTest
+
     private val frontLeftName = "frontLeft"
     private val frontRightName = "frontRight"
     private val backLeftName = "backLeft"
@@ -96,6 +98,7 @@ class Drivetrain : NextFTCOpMode() {
     override fun onStartButtonPressed() {
         // NewTurret.backRightMotor.atPosition(6000.0)
         NewTurret.trackTarget()
+        logger = LogTest()
 
         driverControlled = MecanumDriverControlled(
             frontLeftMotor,
@@ -210,12 +213,12 @@ class Drivetrain : NextFTCOpMode() {
 
         button { gamepad1.x }
             .whenBecomesTrue {
-                Spindexer.spinShotSpeedOffset += 0.05
+                BiLinearShooter.zoneProjectionLookahead += 0.1
             }
 
         button { gamepad1.b }
             .whenBecomesTrue {
-                Spindexer.spinShotSpeedOffset -= 0.05
+                BiLinearShooter.zoneProjectionLookahead -= 0.1
             }
 
         //Intake artifact
@@ -381,6 +384,7 @@ class Drivetrain : NextFTCOpMode() {
             telemetry.addData("LT", "Av: %.2f, Max: %.2f", loopTimeAverage, maxLoopTime)
 
             telemetry.addData("Pos", "(%.1f, %.1f, %.1f), Tur: (%.1f, %.1f)", follower.pose.x, follower.pose.y, Math.toDegrees(follower.heading), NewTurret.turretX, NewTurret.turretY)
+            telemetry.addLine("ProjectedPos: (" + BiLinearShooter.projectedX + ", " + BiLinearShooter.projectedY + ")")
 
             telemetry.addData("Shooter", "V: %.0f, T: %.0f, Offset: %.0f",Shooter.shooter.velocity, Shooter.target, Shooter.manualOffset)
             telemetry.addData("Turret", "F: %.1f, R: %.1f, S: %.3f",NewTurret.targetAngleField, NewTurret.targetAngleRobotRef, NewTurret.targetServoPosition)
@@ -420,12 +424,27 @@ class Drivetrain : NextFTCOpMode() {
                 } else {
                     "None"
                 }
-            ) // Only UPDATES when LT is held, the line is always here
+            )
 
+            telemetry.addData("TurretAbsolutePosition", NewTurret.turretAbsolutePos)
             telemetry.addData("TurretTargetReached", NewTurret.targetReached)
-            telemetry.addData("SpindexerShotSpeedOffset", Spindexer.spinShotSpeedOffset)
+            telemetry.addData("LookAhead", BiLinearShooter.zoneProjectionLookahead)
+            telemetry.addData("AngularVel", NewTurret.angularVel * -4.5)
 
             telemetry.update()
+
+            logger.log(System.currentTimeMillis(),
+                follower.pose.x,
+                follower.pose.y,
+                follower.heading,
+                BiLinearShooter.projectedX,
+                BiLinearShooter.projectedY,
+                NewTurret.targetAngleRobotRef,
+                NewTurret.turretAbsolutePos,
+                Shooter.target,
+                Shooter.shooter.velocity,
+                Shooter.shooter.power
+            )
 
             lastTelemetryTime = now
         }
@@ -433,6 +452,7 @@ class Drivetrain : NextFTCOpMode() {
     }
 
     override fun onStop() {
+        logger.close()
         NewTurret.stopTracking()
         IndicatorLED.forceStop()
         BindingManager.reset()

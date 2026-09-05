@@ -2,19 +2,20 @@ package org.firstinspires.ftc.teamcode.opModes.subsystems
 
 import com.bylazar.configurables.annotations.Configurable
 import com.pedropathing.geometry.Pose
+import com.pedropathing.math.Vector
+import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.Servo
 import dev.nextftc.core.commands.utility.InstantCommand
 import dev.nextftc.core.subsystems.Subsystem
 import dev.nextftc.extensions.pedro.PedroComponent.Companion.follower
+import dev.nextftc.hardware.impl.MotorEx
+import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter
 import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter.goalClose
+import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter.goalFar
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
-import com.pedropathing.math.Vector
-import com.qualcomm.robotcore.hardware.DcMotorEx
-import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.teamcode.opModes.teleOp.BiLinearShooter.goalFar
 
 @Configurable
 object NewTurret : Subsystem {
@@ -29,12 +30,12 @@ object NewTurret : Subsystem {
     var targetServoPosition = 0.5  // 0.5 = straight back
     var targetAngleRobotRef: Double = 180.0 // 0 is facing forward, CCW increasing
     var targetAngleField: Double = 270.0 // 0 is right, increases CCW
+    var angularVel = 0.0
 
     var targetAngleStatic: Double = 0.0
     var targetAngleAV: Double = 0.0
-    val TURRET_MAX_TOLERANCE_DEGREES = 5 // Uses degrees TODO: Tune
-    val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 3
-    val TURRET_DIGITAL_TPD = 10/3
+    val TURRET_MAX_TOLERANCE_DEGREES = 2
+    val TURRET_CALIBRATION_MAX_DELTA_DEGREES = 7
 
     var turretOffset = 0.0
     var turretRelativePos = 1000.0
@@ -46,7 +47,7 @@ object NewTurret : Subsystem {
     var targetReached = true
 
     @JvmField var goalTrackingActive = false
-    @JvmField var kVF = -4.5
+    @JvmField var kVF = -6.0
 
     var turretX = 0.0
     var turretY = 0.0
@@ -148,7 +149,7 @@ object NewTurret : Subsystem {
             turretOffset = targetAngleAV - turretRelativePos
         }
 
-        var angularVel = follower.angularVelocity // rad/sec
+        angularVel = follower.angularVelocity
 
         var robotHeading = Math.toDegrees(follower.heading)
 
@@ -162,11 +163,17 @@ object NewTurret : Subsystem {
 
         val goal = if (turretY > 50.0) goalClose else goalFar
 
+        val velocityOffset = follower.velocity.copy()
+        velocityOffset.setMagnitude(velocityOffset.getMagnitude() * BiLinearShooter.zoneProjectionLookahead)
+
+        val projectedY = turretY + velocityOffset.getYComponent()
+        val projectedX = turretX + velocityOffset.getXComponent()
+
         // Compute target angle in degrees
         targetAngleField = if (PoseStorage.blueAlliance) {
-            180.0 - Math.toDegrees(atan2(abs(goal.y - turretY), abs(goal.x - turretX)))
+            180.0 - Math.toDegrees(atan2(abs(goal.y - projectedY), abs(goal.x - projectedX)))
         } else {
-            Math.toDegrees(atan2(abs(goal.y - turretY), abs(goal.x - (141.5 - turretX))))
+            Math.toDegrees(atan2(abs(goal.y - projectedY), abs(goal.x - (141.5 - projectedX))))
         }
 
         targetAngleStatic = targetAngleField + turretRobotAdj;
@@ -180,8 +187,8 @@ object NewTurret : Subsystem {
             ticksSinceLastPositionReset++
         }
 
-        turretRelativePos = turretDigital.currentPosition / TURRET_DIGITAL_TPD
-        turretAbsolutePos = turretRelativePos + turretOffset
+        turretRelativePos =  (turretDigital.currentPosition / 12000) * 360
+        turretAbsolutePos = (turretRelativePos + turretOffset) % 360
 
         if (abs(turretAbsolutePos - idealAngle) < TURRET_MAX_TOLERANCE_DEGREES) {
             targetReached = true
