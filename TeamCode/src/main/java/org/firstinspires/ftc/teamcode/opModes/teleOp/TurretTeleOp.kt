@@ -14,7 +14,6 @@ import dev.nextftc.ftc.components.BulkReadComponent
 import dev.nextftc.hardware.driving.MecanumDriverControlled
 import dev.nextftc.hardware.impl.MotorEx
 import org.firstinspires.ftc.teamcode.opModes.subsystems.NewTurret
-import org.firstinspires.ftc.teamcode.opModes.subsystems.Spindexer
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants
 
 @TeleOp(name = "Turret Test & Tune")
@@ -42,9 +41,10 @@ class TurretTeleOp : NextFTCOpMode() {
 
     private lateinit var driverControlled: MecanumDriverControlled
 
+    var servoPos = 180.0
+
     override fun onInit() {
         NewTurret.stopTracking()
-        NewTurret.toAngle(180.0)
         frontLeftMotor = MotorEx(frontLeftName)
         frontRightMotor = MotorEx(frontRightName)
         backLeftMotor = MotorEx(backLeftName)
@@ -75,6 +75,18 @@ class TurretTeleOp : NextFTCOpMode() {
                 NewTurret.trackTarget()
             }
 
+        button {gamepad1.dpad_right}
+            .whenBecomesTrue { servoPos += 20 }
+
+        button {gamepad1.dpad_left}
+            .whenBecomesTrue { servoPos -= 20 }
+
+        button {gamepad1.a}
+            .whenBecomesTrue { NewTurret.toAngle(servoPos) }
+    }
+
+    fun ticksToDegrees(ticks: Double): Double {
+        return (ticks / 12000) * 360
     }
 
     override fun onUpdate() {
@@ -87,7 +99,7 @@ class TurretTeleOp : NextFTCOpMode() {
         panelsTelemetry.addData("Angular Vel", follower.angularVelocity)
         panelsTelemetry.addData("ff", follower.angularVelocity * NewTurret.kVF)
         panelsTelemetry.addData("target pos", NewTurret.targetAngleStatic)
-        //panelsTelemetry.addData("encoder", (360.0 - NewTurret.backRightMotor.currentPosition * (360.0/12000.0)))
+        panelsTelemetry.addData("encoder", ticksToDegrees(NewTurret.turretDigital.currentPosition))
 
         // Update panel and telemetry
         panelsTelemetry.update(telemetry)

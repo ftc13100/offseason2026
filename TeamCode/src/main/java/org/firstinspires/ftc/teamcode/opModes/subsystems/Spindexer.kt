@@ -11,7 +11,6 @@ import dev.nextftc.core.commands.utility.LambdaCommand
 import dev.nextftc.core.subsystems.Subsystem
 import dev.nextftc.ftc.ActiveOpMode.hardwareMap
 import dev.nextftc.hardware.impl.MotorEx
-import org.firstinspires.ftc.teamcode.opModes.subsystems.Prism.GoBildaPrismDriver
 
 
 @Configurable
@@ -35,8 +34,6 @@ object Spindexer : Subsystem {
         get() = (360.0 / (4000.0) * spindexer.currentPosition)
 
     val spindexer = MotorEx("spindexer").brakeMode()
-    lateinit var prism: GoBildaPrismDriver
-    lateinit var leds: LedArtboard
     lateinit var color0: NormalizedColorSensor
     lateinit var color1: NormalizedColorSensor
     lateinit var color2: NormalizedColorSensor
@@ -55,6 +52,7 @@ object Spindexer : Subsystem {
     private var startTime = 0L
     private var startPos = 0.0
     private var hasStopped = false
+    var atIntakePos = false
 
     val SPINDEXER_ENCODER_MAX = 4000.0
     val SPINDEXER_STEP = SPINDEXER_ENCODER_MAX / 3.0
@@ -69,6 +67,9 @@ object Spindexer : Subsystem {
     val absEncV = { analogS.voltage }
     val absEncP = { analogS.voltage / SPINDEXER_ABS_ENC_V_MAX * SPINDEXER_ENCODER_MAX }
     val digEncV = { spindexer.currentPosition }
+    var spinShotSpeed = 0.9
+    var spinShotSpeedOffset = 0.0
+
     fun digEncLimitV() : Double {
         var enc = spindexer.currentPosition % SPINDEXER_ENCODER_MAX
         if (enc < 0.0)
@@ -113,8 +114,6 @@ object Spindexer : Subsystem {
 
         lastIntakeState = currentlyRunning
 
-        //refreshLeds(currentlyRunning)
-
         when (state) {
             State.PID -> {
                 spindexer.power =
@@ -153,6 +152,8 @@ object Spindexer : Subsystem {
 
         if(movePos > (SPINDEXER_STEP - SPINDEXER_TOLERANCE))
             movePos -= SPINDEXER_STEP
+
+        atIntakePos = true
 
         return spindexer.currentPosition + movePos
     }
@@ -236,7 +237,8 @@ object Spindexer : Subsystem {
     val spinShot = InstantCommand {
     //    Intake.spinSlowSpeed()() // shouldn't be necessary, also is bad for battery usage when shooting
         state = State.MANUAL
-        spindexer.power = 0.9
+        spindexer.power = spinShotSpeed + spinShotSpeedOffset
+        atIntakePos = false
     }
         .requires(this)
 
@@ -244,6 +246,7 @@ object Spindexer : Subsystem {
         //    Intake.spinSlowSpeed()() // shouldn't be necessary, also is bad for battery usage when shooting
         state = State.MANUAL
         spindexer.power = 0.5
+        atIntakePos = false
     }
         .requires(this)
 
@@ -253,7 +256,8 @@ object Spindexer : Subsystem {
             startTime = System.currentTimeMillis()
             startPos = spindexer.currentPosition
             hasStopped = false
-            spindexer.power = 0.9
+            spindexer.power = spinShotSpeed + spinShotSpeedOffset
+            atIntakePos = false
         }
         .setIsDone {
             val now = System.currentTimeMillis()
@@ -379,7 +383,7 @@ object Spindexer : Subsystem {
     val isBusy: Boolean
         get() = state == State.PID || (state == State.MANUAL && spindexer.power > 0.2)
 
-    fun pixelCount(): Int {
+    fun artifactCount(): Int {
         var count = 0
         if (cached0 != SpindexerColor.EMPTY) count++
         if (cached1 != SpindexerColor.EMPTY) count++
@@ -388,8 +392,6 @@ object Spindexer : Subsystem {
     }
 
     override fun initialize() {
-        prism = hardwareMap.get(GoBildaPrismDriver::class.java, "led")
-        leds = LedArtboard(prism)
         analogS = hardwareMap.get(AnalogInput::class.java, "analogS")
         color0 = hardwareMap.get(NormalizedColorSensor::class.java, "cs0")
         color0.gain = 12.0f
